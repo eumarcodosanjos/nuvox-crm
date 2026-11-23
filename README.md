@@ -7,18 +7,15 @@ Identidade visual **"Ascensão"**: toda venda é uma subida.
 Navegador ──► Vercel (site React) ──/api/*──► Cloudflare Worker (API) ──binding──► D1
 ```
 
-> **Branch `api-worker`:** a API roda num Cloudflare Worker com acesso direto ao D1 (sem token
-> em tempo de execução). A Vercel só serve o site e repassa `/api/*` para o Worker; nenhum segredo
-> fica na Vercel. Para publicar:
->
-> 1. `npx wrangler deploy` (pede login na Cloudflare)
-> 2. `openssl rand -hex 32 | npx wrangler secret put SESSION_SECRET`
-> 3. Troque `SUBDOMINIO` no `vercel.json` pela URL que o deploy mostrar e publique na Vercel.
+A API roda num **Cloudflare Worker** com acesso direto ao D1 (binding, sem token). A **Vercel** só
+serve o site e repassa `/api/*` para o Worker: nenhum segredo fica na Vercel.
+
+> **Sem login:** o CRM é de uso pessoal. Quem tiver a URL vê os dados e pode marcar tarefas.
+> A tabela `usuarios` já existe no banco, vazia, para quando quiser ligar um login.
 
 - **Front:** React 19, Vite, TypeScript, Tailwind CSS 3, shadcn/ui (radius 0), TanStack Query, lucide-react
 - **API:** Cloudflare Worker (`worker/index.ts`) com o roteador em `server/rotas.ts`; no `npm run dev` o mesmo roteador roda dentro do Vite
 - **Banco:** Cloudflare D1 (SQLite). Schema em Drizzle (`db/schema.ts`), migrations em `drizzle/`
-- **Login:** tabela `usuarios` (senha PBKDF2) + cookie HttpOnly assinado. Toda rota `/api` exige sessão.
 
 ## Rodar localmente (sem Cloudflare)
 
@@ -30,14 +27,10 @@ npm install
 cp .env.example .env
 ```
 
-No `.env`, preencha `SESSION_SECRET` (gere com `openssl rand -hex 32`) e descomente `DB_LOCAL=.dev-db/nuvox.sqlite`. Depois:
+No `.env`, descomente `DB_LOCAL=.dev-db/nuvox.sqlite`. Depois:
 
 ```bash
 npm run db:local
-```
-
-```bash
-npm run usuario:criar
 ```
 
 ```bash
@@ -50,39 +43,20 @@ Abra http://localhost:5173. O `db:local` cria um SQLite com as migrations e o **
 
 No `.env`, deixe `DB_LOCAL` comentado e preencha as variáveis `CLOUDFLARE_*` (veja abaixo).
 
-## Deploy na Vercel
+## Publicar
 
-1. Em [vercel.com/new](https://vercel.com/new), importe o repositório `nuvox-crm`. O framework (Vite) é detectado sozinho.
-2. Em **Settings → Environment Variables**, cadastre:
-
-| Variável | Valor |
-|---|---|
-| `CLOUDFLARE_ACCOUNT_ID` | ID da sua conta Cloudflare (painel → Workers & Pages, na lateral direita) |
-| `CLOUDFLARE_D1_DATABASE_ID` | `471c6694-d9d6-44a6-9bce-ec488bc355f6` (banco `nuvox-crm`) |
-| `CLOUDFLARE_API_TOKEN` | Token com permissão **Account → D1 → Edit** (veja abaixo) |
-| `SESSION_SECRET` | 64 caracteres aleatórios: `openssl rand -hex 32` |
-
-3. Faça o deploy. Cada push na `main` publica de novo.
-
-A função roda em `iad1` (Washington), perto do D1 (leste dos EUA), para as consultas serem rápidas.
-
-### Criar o token da Cloudflare
-
-Painel da Cloudflare → **My Profile → API Tokens → Create Token → Create Custom Token**:
-- Permissions: **Account · D1 · Edit**
-- Account Resources: só a sua conta
-
-Esse token fica **só na Vercel** (e no seu `.env` local). Nunca vai para o navegador nem para o git.
-
-### Criar seu usuário no banco de produção
-
-Com o `.env` apontando para o D1 (`CLOUDFLARE_*` preenchidas e `DB_LOCAL` comentado):
+**1. API (Cloudflare Worker)** — pede login na Cloudflare na primeira vez:
 
 ```bash
-npm run usuario:criar
+npx wrangler deploy
 ```
 
-Rodar de novo com o mesmo e-mail troca a senha.
+O deploy mostra a URL do Worker, algo como `https://nuvox-crm-api.SEU-SUBDOMINIO.workers.dev`.
+O Worker usa *Smart Placement* para rodar perto do D1 (leste dos EUA), então várias consultas por tela continuam rápidas.
+
+**2. Site (Vercel)** — troque `SUBDOMINIO` no `vercel.json` pela URL do passo 1 e importe o
+repositório em [vercel.com/new](https://vercel.com/new). O framework (Vite) é detectado sozinho e
+**não precisa de variável de ambiente nenhuma**. Cada push na branch publicada gera deploy novo.
 
 ## Banco de dados
 
@@ -95,7 +69,7 @@ Rodar de novo com o mesmo e-mail troca a senha.
 | `tarefas` | Agenda do comercial; `negocio_id` é opcional |
 | `licencas` | Clientes com mensalidade (receita recorrente) |
 | `metas` | Meta de fechamento por mês (`mes` = primeiro dia do mês) |
-| `usuarios` | Acesso ao CRM |
+| `usuarios` | Reservada para um login futuro (vazia) |
 
 - **Dinheiro em centavos** (INTEGER). O front formata com `Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })`.
 - **Datas com hora** em ISO-8601 UTC. Os períodos (Hoje, Semana, Mês, Ano) são calculados no fuso de São Paulo, com a semana começando na segunda.
@@ -129,14 +103,14 @@ npx wrangler d1 migrations apply nuvox-crm --remote
 ## Estrutura
 
 ```
-api/index.ts            função da Vercel (entrada única da API)
-server/                 roteador, consultas, sessão, acesso ao D1
+worker/index.ts         Cloudflare Worker (entrada da API)
+server/                 roteador, consultas, períodos, acesso ao D1
 db/schema.ts            schema Drizzle (fonte da verdade)
 db/seed.sql             dados de TESTE
 drizzle/                migrations SQL
-scripts/                db-local, criar-usuario
+scripts/                db-local (SQLite de teste)
 src/components/         marca, layout, ui (shadcn) e dashboard
-src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, useSessao
-src/lib/                negocio (valorNegocio), formato, tipos, api
-src/pages/              Dashboard, Entrar, EmBreve
+src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads
+src/lib/                negocio (valorNegocio), formato, tipos, api, usuario
+src/pages/              Dashboard, EmBreve
 ```

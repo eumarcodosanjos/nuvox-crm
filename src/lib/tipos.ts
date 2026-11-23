@@ -80,9 +80,3 @@ export interface OrigemLeads {
   origem: Origem;
   quantidade: number;
 }
-
-export interface Sessao {
-  id: number;
-  nome: string;
-  email: string;
-}

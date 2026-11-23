@@ -24,6 +24,7 @@ export const ETAPAS = ["novo", "contato", "proposta", "negociacao", "fechado", "
 export const STATUS_PROPOSTA = ["aberta", "aceita", "recusada", "vencida"] as const;
 export const CANAIS = ["whatsapp", "email", "video", "ligacao", "financeiro"] as const;
 
+/** Reservada para quando o CRM tiver login. Hoje não é usada (CRM de uso pessoal). */
 export const usuarios = sqliteTable("usuarios", {
   id: id(),
   nome: text("nome").notNull(),

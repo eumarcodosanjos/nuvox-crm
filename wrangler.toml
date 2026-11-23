@@ -1,7 +1,6 @@
 # API do Nuvox CRM (Cloudflare Worker) + banco D1.
 #   Deploy:      npx wrangler deploy
 #   Migrations:  npx wrangler d1 migrations apply nuvox-crm --remote
-#   Secret:      npx wrangler secret put SESSION_SECRET
 # O site (React) fica na Vercel, que repassa /api/* para este Worker (vercel.json).
 name = "nuvox-crm-api"
 main = "worker/index.ts"

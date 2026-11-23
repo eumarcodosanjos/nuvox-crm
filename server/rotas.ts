@@ -2,9 +2,8 @@
  * Roteador da API. Recebe um Request (padrão Web) e devolve um Response.
  * Funciona igual no Cloudflare Worker (worker/index.ts) e no `npm run dev` (plugin do Vite).
  *
- *   POST   /api/sessao                 login   { email, senha }
- *   GET    /api/sessao                 usuário logado (ou null)
- *   DELETE /api/sessao                 sair
+ * Sem login por enquanto: o CRM é de uso pessoal. Quem tiver a URL acessa os dados.
+ *
  *   GET    /api/dashboard/kpis?periodo=mes
  *   GET    /api/dashboard/funil?periodo=mes
  *   GET    /api/dashboard/propostas-vencendo
@@ -12,15 +11,14 @@
  *   GET    /api/dashboard/origem-leads?periodo=mes
  *   PATCH  /api/tarefas/:id            { concluida: boolean }
  */
-import { conferirSenha, cookieSaida, criarCookieSessao, lerSessao } from "./auth.js";
-import { consultar, ErroBanco } from "./db.js";
+import { ErroBanco } from "./db.js";
 import * as dash from "./dashboard.js";
 import { periodoValido } from "./periodo.js";
 
-const json = (dados: unknown, status = 200, headers: Record<string, string> = {}) =>
+const json = (dados: unknown, status = 200) =>
   new Response(JSON.stringify(dados), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", ...headers },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
   });
 
 const erro = (mensagem: string, status: number) => json({ erro: mensagem }, status);
@@ -33,26 +31,9 @@ function rotaDe(url: URL): string {
 export async function tratar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const rota = rotaDe(url);
-  const https = url.protocol === "https:" || req.headers.get("x-forwarded-proto") === "https";
+  const periodo = periodoValido(url.searchParams.get("periodo"));
 
   try {
-    // ── Sessão (pública) ─────────────────────────────────────────
-    if (rota === "sessao") {
-      if (req.method === "POST") return await entrar(req, https);
-      if (req.method === "DELETE") return json({ ok: true }, 200, { "Set-Cookie": cookieSaida(https) });
-      if (req.method === "GET") {
-        // Sem login responde 200 com null (não é erro: só "ninguém logado").
-        return json(await lerSessao(req));
-      }
-      return erro("Método não permitido.", 405);
-    }
-
-    // ── Daqui pra baixo, só autenticado ──────────────────────────
-    const sessao = await lerSessao(req);
-    if (!sessao) return erro("Não autenticado.", 401);
-
-    const periodo = periodoValido(url.searchParams.get("periodo"));
-
     if (req.method === "GET") {
       switch (rota) {
         case "dashboard/kpis":
@@ -82,24 +63,4 @@ export async function tratar(req: Request): Promise<Response> {
     const msg = e instanceof ErroBanco ? e.message : "Erro interno. Tente de novo em instantes.";
     return erro(msg, 500);
   }
-}
-
-const HASH_FALSO = "pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-
-async function entrar(req: Request, https: boolean): Promise<Response> {
-  const corpo = (await req.json().catch(() => null)) as { email?: unknown; senha?: unknown } | null;
-  const email = typeof corpo?.email === "string" ? corpo.email.trim().toLowerCase() : "";
-  const senha = typeof corpo?.senha === "string" ? corpo.senha : "";
-  if (!email || !senha) return erro("Informe e-mail e senha.", 400);
-
-  const [usuario] = await consultar<{ id: number; nome: string; email: string; senha_hash: string }>(
-    `SELECT id, nome, email, senha_hash FROM usuarios WHERE email = ?`,
-    [email],
-  );
-  // Mesmo sem usuário, calcula um hash para não revelar pelo tempo de resposta se o e-mail existe.
-  const ok = await conferirSenha(senha, usuario?.senha_hash ?? HASH_FALSO);
-  if (!usuario || !ok) return erro("E-mail ou senha incorretos.", 401);
-
-  const sessao = { id: usuario.id, nome: usuario.nome, email: usuario.email };
-  return json(sessao, 200, { "Set-Cookie": await criarCookieSessao(sessao, https) });
 }

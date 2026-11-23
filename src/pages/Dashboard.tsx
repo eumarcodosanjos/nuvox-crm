@@ -15,7 +15,6 @@ import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useFunil } from "@/hooks/useFunil";
 import { useOrigemLeads } from "@/hooks/useOrigemLeads";
 import { usePropostasVencendo } from "@/hooks/usePropostasVencendo";
-import { useSessao } from "@/hooks/useSessao";
 import { useMarcarTarefa, useTarefasHoje } from "@/hooks/useTarefasHoje";
 import {
   moeda,
@@ -26,6 +25,7 @@ import {
   saudacao,
 } from "@/lib/formato";
 import type { Periodo } from "@/lib/tipos";
+import { USUARIO } from "@/lib/usuario";
 import { cn } from "@/lib/utils";
 
 function lerPeriodo(v: string | null): Periodo {
@@ -36,7 +36,6 @@ export default function Dashboard() {
   const [params, setParams] = useSearchParams();
   const periodo = lerPeriodo(params.get("periodo"));
   const tituloPeriodo = PERIODOS.find((p) => p.valor === periodo)!.titulo;
-  const { data: sessao } = useSessao();
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +43,7 @@ export default function Dashboard() {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
           <p className="text-sm text-apoio">
-            {saudacao()}, {sessao ? primeiroNome(sessao.nome) : ""}
+            {saudacao()}, {primeiroNome(USUARIO.nome)}
           </p>
           <h1 className="mt-1 font-titulo text-[34px] text-tatame sm:text-[44px]">Dashboard</h1>
         </div>

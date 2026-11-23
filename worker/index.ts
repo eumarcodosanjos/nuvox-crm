@@ -1,6 +1,6 @@
 /**
  * API do Nuvox CRM como Cloudflare Worker.
- * O D1 chega pelo binding `DB` (sem token) e o SESSION_SECRET como secret.
+ * O D1 chega pelo binding `DB` (sem token nenhum).
  * A Vercel serve o site e repassa /api/* para cá (veja vercel.json).
  */
 import { definirAmbiente } from "../server/config.js";

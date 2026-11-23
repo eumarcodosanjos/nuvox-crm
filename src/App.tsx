@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
-import Entrar from "@/pages/Entrar";
 
 const EmBreve = lazy(() => import("@/pages/EmBreve"));
 
@@ -12,7 +11,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/entrar" element={<Entrar />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           {EM_BREVE.map((rota) => (

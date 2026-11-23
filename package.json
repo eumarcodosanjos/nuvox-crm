@@ -12,8 +12,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "db:gerar": "drizzle-kit generate",
-    "db:local": "node --no-warnings scripts/db-local.mjs",
-    "usuario:criar": "tsx scripts/criar-usuario.ts"
+    "db:local": "node --no-warnings scripts/db-local.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.4.1",
@@ -38,7 +37,6 @@
     "postcss": "^8.5.33",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
-    "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vite": "^8.3.8",
     "wrangler": "^4.167.0"

@@ -3,7 +3,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   FileText,
   LayoutDashboard,
-  LogOut,
   Menu,
   MessageSquare,
   SquareCheck,
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 import { Icone } from "@/components/marca/Icone";
 import { NuvoxLogo } from "@/components/marca/NuvoxLogo";
-import { useSair, useSessao } from "@/hooks/useSessao";
+import { USUARIO } from "@/lib/usuario";
 import { cn } from "@/lib/utils";
 
 export const ITENS_MENU: { rota: string; rotulo: string; icone: LucideIcon }[] = [
@@ -54,31 +53,20 @@ function Itens({ aoNavegar }: { aoNavegar?: () => void }) {
   );
 }
 
+/** Dono do CRM no rodapé do menu (uso pessoal, sem login por enquanto). */
 function Usuario() {
-  const { data: sessao } = useSessao();
-  const sair = useSair();
-  if (!sessao) return null;
   return (
-    <div className="flex items-center gap-3 border-t border-borda pt-4">
+    <div className="flex min-h-11 items-center gap-3 border-t border-borda pt-4">
       <span
         aria-hidden
         className="flex size-9 shrink-0 items-center justify-center bg-roxo font-titulo text-sm text-tatame"
       >
-        {sessao.nome.trim().charAt(0)}
+        {USUARIO.nome.trim().charAt(0)}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-tatame">{sessao.nome}</p>
-        <p className="truncate text-xs text-apoio">{sessao.email}</p>
+        <p className="truncate text-sm font-semibold text-tatame">{USUARIO.nome}</p>
+        <p className="truncate text-xs text-apoio">{USUARIO.cargo}</p>
       </div>
-      <button
-        type="button"
-        onClick={() => sair.mutate()}
-        className="flex size-11 shrink-0 items-center justify-center text-apoio hover:text-tatame"
-        aria-label="Sair"
-        title="Sair"
-      >
-        <Icone icone={LogOut} className="size-[18px]" />
-      </button>
     </div>
   );
 }
