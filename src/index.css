@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Tema escuro único. Tokens do shadcn apontando para a paleta Ascensão. */
+  :root {
+    --background: 0 0% 4%;        /* podio #0A0A0A */
+    --foreground: 60 7% 95%;      /* tatame #F2F2F0 */
+    --card: 0 0% 8%;              /* superficie #141414 */
+    --card-foreground: 60 7% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 60 7% 95%;
+    --primary: 74 100% 62%;       /* limao #D4FF3D */
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 60 7% 95%;
+    --muted: 0 0% 15%;            /* borda #262626 */
+    --muted-foreground: 60 4% 70%;/* apoio #B5B5B0 */
+    --accent: 0 0% 15%;
+    --accent-foreground: 60 7% 95%;
+    --destructive: 11 100% 65%;   /* alerta #FF6B4A */
+    --destructive-foreground: 0 0% 4%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 74 100% 62%;
+    --radius: 0rem;
+    color-scheme: dark;
+  }
+
+  *,
+  *::before,
+  *::after {
+    @apply border-border;
+    border-radius: 0 !important; /* regra da marca: cantos vivos em tudo */
+  }
+
+  html,
+  body {
+    @apply bg-podio text-tatame font-sans antialiased;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 2px solid #d4ff3d;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Archivo Expanded, sempre em caixa-alta: títulos, logo e números grandes */
+  .font-titulo {
+    font-family: "Archivo", system-ui, sans-serif;
+    font-stretch: 125%;
+    font-variation-settings: "wdth" 125;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  /* Rótulo pequeno: 11–12px, 600, tracking 0.1em, caixa-alta, cor apoio */
+  .rotulo {
+    @apply text-[11px] font-semibold uppercase tracking-rotulo text-apoio;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,10 @@
+# Usado apenas para aplicar migrations no D1 com o wrangler:
+#   npx wrangler d1 migrations apply nuvox-crm --remote
+# O app em si roda na Vercel e fala com o D1 pela API HTTP da Cloudflare.
+name = "nuvox-crm"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nuvox-crm"
+database_id = "471c6694-d9d6-44a6-9bce-ec488bc355f6"
+migrations_dir = "drizzle"
