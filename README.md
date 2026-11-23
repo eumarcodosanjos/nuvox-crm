@@ -4,11 +4,19 @@ CRM comercial da Nuvox: software para federações esportivas e academias de art
 Identidade visual **"Ascensão"**: toda venda é uma subida.
 
 ```
-Navegador (React + Vite) ──► /api/* (Vercel Function) ──► Cloudflare D1 (API HTTP)
+Navegador ──► Vercel (site React) ──/api/*──► Cloudflare Worker (API) ──binding──► D1
 ```
 
+> **Branch `api-worker`:** a API roda num Cloudflare Worker com acesso direto ao D1 (sem token
+> em tempo de execução). A Vercel só serve o site e repassa `/api/*` para o Worker; nenhum segredo
+> fica na Vercel. Para publicar:
+>
+> 1. `npx wrangler deploy` (pede login na Cloudflare)
+> 2. `openssl rand -hex 32 | npx wrangler secret put SESSION_SECRET`
+> 3. Troque `SUBDOMINIO` no `vercel.json` pela URL que o deploy mostrar e publique na Vercel.
+
 - **Front:** React 19, Vite, TypeScript, Tailwind CSS 3, shadcn/ui (radius 0), TanStack Query, lucide-react
-- **API:** uma função da Vercel (`api/index.ts`) com o roteador em `server/rotas.ts`
+- **API:** Cloudflare Worker (`worker/index.ts`) com o roteador em `server/rotas.ts`; no `npm run dev` o mesmo roteador roda dentro do Vite
 - **Banco:** Cloudflare D1 (SQLite). Schema em Drizzle (`db/schema.ts`), migrations em `drizzle/`
 - **Login:** tabela `usuarios` (senha PBKDF2) + cookie HttpOnly assinado. Toda rota `/api` exige sessão.
 

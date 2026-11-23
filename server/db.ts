@@ -1,23 +1,27 @@
 /**
- * Acesso ao banco.
- * - Produção: Cloudflare D1 pela API HTTP (credenciais só no servidor).
- * - Desenvolvimento: se DB_LOCAL estiver definido, usa um SQLite local
- *   (node:sqlite) com o mesmo schema — veja `npm run db:local`.
+ * Acesso ao banco, na ordem:
+ * 1. Produção (Cloudflare Worker): binding D1 direto, sem token.
+ * 2. Desenvolvimento com DB_LOCAL: SQLite local (node:sqlite), veja `npm run db:local`.
+ * 3. Desenvolvimento contra o D1 real: API HTTP da Cloudflare (CLOUDFLARE_*).
  */
+import { bindingD1, variavel } from "./config.js";
+
 export type Linha = Record<string, unknown>;
 export type Parametro = string | number | null;
 
 export class ErroBanco extends Error {}
 
 export async function consultar<T = Linha>(sql: string, params: Parametro[] = []): Promise<T[]> {
-  if (process.env.DB_LOCAL) return consultarLocal<T>(sql, params);
-  return consultarD1<T>(sql, params);
+  const d1 = bindingD1();
+  if (d1) return (await d1.prepare(sql).bind(...params).all<T>()).results;
+  if (variavel("DB_LOCAL")) return consultarLocal<T>(sql, params);
+  return consultarD1Http<T>(sql, params);
 }
 
-async function consultarD1<T>(sql: string, params: Parametro[]): Promise<T[]> {
-  const conta = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const banco = process.env.CLOUDFLARE_D1_DATABASE_ID;
-  const token = process.env.CLOUDFLARE_API_TOKEN;
+async function consultarD1Http<T>(sql: string, params: Parametro[]): Promise<T[]> {
+  const conta = variavel("CLOUDFLARE_ACCOUNT_ID");
+  const banco = variavel("CLOUDFLARE_D1_DATABASE_ID");
+  const token = variavel("CLOUDFLARE_API_TOKEN");
   if (!conta || !banco || !token) {
     throw new ErroBanco(
       "Banco não configurado: defina CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_D1_DATABASE_ID e CLOUDFLARE_API_TOKEN.",
@@ -53,8 +57,10 @@ let local: BancoLocal | null = null;
 
 async function consultarLocal<T>(sql: string, params: Parametro[]): Promise<T[]> {
   if (!local) {
-    const { DatabaseSync } = await import("node:sqlite");
-    local = new DatabaseSync(process.env.DB_LOCAL!) as unknown as BancoLocal;
+    // Caminho em variável para o bundler do Worker não tentar incluir node:sqlite.
+    const modulo = "node:sqlite";
+    const { DatabaseSync } = (await import(/* @vite-ignore */ modulo)) as typeof import("node:sqlite");
+    local = new DatabaseSync(variavel("DB_LOCAL")!) as unknown as BancoLocal;
   }
   const stmt = local.prepare(sql);
   const retornaLinhas = /^\s*(select|with)\b/i.test(sql) || /\breturning\b/i.test(sql);

@@ -1,13 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "regions": [
-    "iad1"
-  ],
   "rewrites": [
     {
       "source": "/api/:rota*",
-      "destination": "/api?rota=:rota*"
+      "destination": "https://nuvox-crm-api.SUBDOMINIO.workers.dev/api/:rota*"
     },
     {
       "source": "/((?!api).*)",

@@ -8,8 +8,8 @@
  */
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
-import { gerarHashSenha } from "../server/auth.ts";
-import { consultar } from "../server/db.ts";
+import { gerarHashSenha } from "../server/auth.js";
+import { consultar } from "../server/db.js";
 
 try {
   process.loadEnvFile(".env");

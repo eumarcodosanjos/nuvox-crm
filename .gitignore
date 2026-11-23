@@ -7,3 +7,5 @@ dist
 *.local
 .dev-db/
 *.tsbuildinfo
+.dev.vars
+.wrangler/

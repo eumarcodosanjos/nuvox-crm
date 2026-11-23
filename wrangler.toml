@@ -1,7 +1,22 @@
-# Usado apenas para aplicar migrations no D1 com o wrangler:
-#   npx wrangler d1 migrations apply nuvox-crm --remote
-# O app em si roda na Vercel e fala com o D1 pela API HTTP da Cloudflare.
-name = "nuvox-crm"
+# API do Nuvox CRM (Cloudflare Worker) + banco D1.
+#   Deploy:      npx wrangler deploy
+#   Migrations:  npx wrangler d1 migrations apply nuvox-crm --remote
+#   Secret:      npx wrangler secret put SESSION_SECRET
+# O site (React) fica na Vercel, que repassa /api/* para este Worker (vercel.json).
+name = "nuvox-crm-api"
+main = "worker/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+
+# Roda o Worker perto do banco (D1 fica no leste dos EUA), não perto do usuário:
+# várias consultas por tela ficam rápidas.
+[placement]
+mode = "smart"
+
+[observability]
+enabled = true
 
 [[d1_databases]]
 binding = "DB"

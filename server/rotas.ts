@@ -1,6 +1,6 @@
 /**
  * Roteador da API. Recebe um Request (padrão Web) e devolve um Response.
- * Funciona igual na Vercel (api/index.ts) e no `npm run dev` (plugin do Vite).
+ * Funciona igual no Cloudflare Worker (worker/index.ts) e no `npm run dev` (plugin do Vite).
  *
  *   POST   /api/sessao                 login   { email, senha }
  *   GET    /api/sessao                 usuário logado (ou null)
@@ -25,11 +25,9 @@ const json = (dados: unknown, status = 200, headers: Record<string, string> = {}
 
 const erro = (mensagem: string, status: number) => json({ erro: mensagem }, status);
 
-/** Rota relativa a /api. Na Vercel chega como ?rota=..., no dev pelo próprio caminho. */
+/** Rota relativa a /api, ex.: "dashboard/kpis". */
 function rotaDe(url: URL): string {
-  const daQuery = url.searchParams.get("rota");
-  const bruta = daQuery ?? url.pathname.replace(/^\/api\/?/, "");
-  return bruta.replace(/^\/+|\/+$/g, "");
+  return url.pathname.replace(/^\/api\/?/, "").replace(/^\/+|\/+$/g, "");
 }
 
 export async function tratar(req: Request): Promise<Response> {
@@ -86,7 +84,7 @@ export async function tratar(req: Request): Promise<Response> {
   }
 }
 
-const HASH_FALSO = "pbkdf2$600000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+const HASH_FALSO = "pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 async function entrar(req: Request, https: boolean): Promise<Response> {
   const corpo = (await req.json().catch(() => null)) as { email?: unknown; senha?: unknown } | null;

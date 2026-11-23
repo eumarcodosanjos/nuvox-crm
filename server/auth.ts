@@ -1,11 +1,14 @@
 /**
  * Autenticação simples para uso interno:
- * - senha com PBKDF2-SHA256 (600 mil iterações, sal aleatório);
+ * - senha com PBKDF2-SHA256 (100 mil iterações — limite do Workers —, sal aleatório);
  * - sessão em cookie HttpOnly assinado com HMAC-SHA256 (SESSION_SECRET).
  */
+import { Buffer } from "node:buffer";
 import type { Sessao } from "../src/lib/tipos.js";
+import { variavel } from "./config.js";
 
-const ITERACOES = 600_000;
+// 100 mil é o máximo aceito pelo WebCrypto do Cloudflare Workers.
+const ITERACOES = 100_000;
 const COOKIE = "nuvox_sessao";
 const DURACAO_S = 60 * 60 * 24 * 7; // 7 dias
 
@@ -43,7 +46,7 @@ function iguais(a: Uint8Array, b: Uint8Array) {
 }
 
 async function chaveHmac() {
-  const segredo = process.env.SESSION_SECRET;
+  const segredo = variavel("SESSION_SECRET");
   if (!segredo || segredo.length < 32) {
     throw new Error("SESSION_SECRET ausente ou curto (mínimo 32 caracteres).");
   }
