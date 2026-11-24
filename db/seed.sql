@@ -71,6 +71,24 @@ FROM (VALUES
 JOIN leads l    ON l.nome = v.column1
 JOIN produtos p ON p.nome = v.column2;
 
+-- GovEscolar: leads com os campos próprios (município, cargo, rede, tamanho)
+INSERT INTO leads (nome, organizacao, tipo, origem, telefone, email, municipio, uf, cargo_contato, rede_ensino, qtd_escolas, qtd_alunos, created_at)
+SELECT column1, column2, column3, column4, column5, column6, column7, column8, column9, column10, column11, column12,
+       strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || column13 || ' days')
+FROM (VALUES
+  ('[TESTE] Renata Oliveira', 'Secretaria Municipal de Educação de Biguaçu', 'secretaria_educacao', 'indicacao', '(48) 90000-0017', 'renata@teste.invalid', 'Biguaçu', 'SC', 'secretario_educacao', 'municipal', 24, 9800, 3),
+  ('[TESTE] Sérgio Lima',     'EEB Professora Maria Luz',                     'escola',              'site',      '(48) 90000-0018', 'sergio@teste.invalid', 'Tubarão', 'SC', 'diretor',             'estadual',  1,  640,  7)
+);
+
+INSERT INTO negocios (lead_id, produto_id, etapa, valor_implantacao, valor_mensal, valor_avulso, created_at)
+SELECT l.id, p.id, v.column2, v.column3, v.column4, 0, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-' || v.column5 || ' days')
+FROM (VALUES
+  ('[TESTE] Renata Oliveira', 'proposta', 1200000, 350000, 3),
+  ('[TESTE] Sérgio Lima',     'contato',        0,  49900, 7)
+) v
+JOIN leads l    ON l.nome = v.column1
+JOIN produtos p ON p.nome = 'GovEscolar';
+
 -- Propostas abertas (e uma aceita) — vence_em é calculada pelo banco
 INSERT INTO propostas (negocio_id, enviada_em, validade_dias, status)
 SELECT n.id, date('now', '-3 hours', '-' || v.column2 || ' days'), v.column3, v.column4

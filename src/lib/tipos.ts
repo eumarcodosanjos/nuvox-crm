@@ -3,6 +3,8 @@
  * Não edite à mão: altere o schema e rode `npm run db:gerar`.
  */
 import type {
+  CARGOS,
+  REDES_ENSINO,
   CANAIS,
   ETAPAS,
   ORIGENS,
@@ -31,6 +33,8 @@ export type TipoLead = (typeof TIPOS_LEAD)[number];
 export type StatusProposta = (typeof STATUS_PROPOSTA)[number];
 export type Canal = (typeof CANAIS)[number];
 export type NomeProduto = Produto["nome"];
+export type Cargo = (typeof CARGOS)[number];
+export type RedeEnsino = (typeof REDES_ENSINO)[number];
 
 export type Periodo = "hoje" | "semana" | "mes" | "ano";
 
@@ -42,6 +46,47 @@ export interface DashboardKpis {
   fechadoPeriodo: { valor: number; negocios: number };
   meta: { valor: number | null; fechadoMes: number; percentual: number | null };
   implantacoes: { quantidade: number; valor: number };
+}
+
+/* ── Leads ──────────────────────────────────────────────────────── */
+
+/** Lead na lista, com o negócio mais recente (se houver). */
+export interface LeadLista {
+  id: number;
+  nome: string;
+  organizacao: string | null;
+  tipo: TipoLead;
+  origem: Origem;
+  telefone: string | null;
+  email: string | null;
+  municipio: string | null;
+  uf: string | null;
+  criadoEm: string;
+  negocio: { id: number; etapa: Etapa; valor: number; produtoId: number; produto: NomeProduto; produtoCor: string } | null;
+}
+
+/** Corpo do POST /api/leads. Valores em centavos. */
+export interface NovoLead {
+  nome: string;
+  organizacao?: string | null;
+  tipo: TipoLead;
+  origem: Origem;
+  telefone?: string | null;
+  email?: string | null;
+  observacoes?: string | null;
+  municipio?: string | null;
+  uf?: string | null;
+  cargo_contato?: Cargo | null;
+  rede_ensino?: RedeEnsino | null;
+  qtd_escolas?: number | null;
+  qtd_alunos?: number | null;
+  negocio: {
+    produto_id: number;
+    etapa: Exclude<Etapa, "perdido">;
+    valor_implantacao: number;
+    valor_mensal: number;
+    valor_avulso: number;
+  };
 }
 
 /* ── Pipeline (kanban) ──────────────────────────────────────────── */

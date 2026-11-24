@@ -6,8 +6,9 @@ import Dashboard from "@/pages/Dashboard";
 const EmBreve = lazy(() => import("@/pages/EmBreve"));
 const ReunioesKime = lazy(() => import("@/pages/ReunioesKime"));
 const Pipeline = lazy(() => import("@/pages/Pipeline"));
+const Leads = lazy(() => import("@/pages/Leads"));
 
-const EM_BREVE = ["leads", "propostas", "conversas", "tarefas", "clientes", "relatorios"];
+const EM_BREVE = ["propostas", "conversas", "tarefas", "clientes", "relatorios"];
 
 export default function App() {
   return (
@@ -15,6 +16,14 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route
+            path="/leads"
+            element={
+              <Suspense fallback={null}>
+                <Leads />
+              </Suspense>
+            }
+          />
           <Route
             path="/pipeline"
             element={

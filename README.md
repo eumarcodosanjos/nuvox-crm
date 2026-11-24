@@ -81,8 +81,8 @@ na Vercel está ligado ao GitHub e **não precisa de variável de ambiente nenhu
 
 | Tabela | Para quê |
 |---|---|
-| `produtos` | Nuvox Federações, Combat e Academia, com o modelo de cobrança e a **cor** de identidade |
-| `leads` | Contatos (`tipo` e `origem` validados por CHECK) |
+| `produtos` | Nuvox Federações, Combat, Academia e GovEscolar, com o modelo de cobrança e a **cor** de identidade. Produto novo entra como dado (nome + cor) |
+| `leads` | Contatos (`tipo` e `origem` validados por CHECK) + campos do GovEscolar: município, UF, cargo, rede de ensino, nº de escolas e de alunos |
 | `negocios` | Oportunidades por etapa: novo → contato → proposta → negociacao → fechado / perdido |
 | `propostas` | `vence_em` é **coluna gerada** (`enviada_em + validade_dias`) |
 | `tarefas` | Agenda do comercial; `negocio_id` é opcional |
@@ -104,7 +104,7 @@ npm run db:gerar
 npx wrangler d1 migrations apply nuvox-crm --remote
 ```
 
-(O `wrangler` pede login na Cloudflare na primeira vez. As migrations `0000` a `0002` já estão aplicadas e registradas.)
+(O `wrangler` pede login na Cloudflare na primeira vez. As migrations `0000` a `0004` já estão aplicadas e registradas (a `0003` é a das reuniões do Kime). Atenção: o D1 recusa padrões `GLOB`/`LIKE` longos em CHECK.)
 
 ### Dados de teste
 
@@ -120,7 +120,10 @@ npx wrangler d1 migrations apply nuvox-crm --remote
 - **Pipeline (kanban):** colunas Novo → Fechado no mês. Arraste os cards (mouse, toque ou teclado:
   espaço pega, ←/→ trocam de coluna, ↓ marca como perdido) ou use o menu ⋯ "Mover para".
   Entrar em Fechado grava `fechado_em` e aceita as propostas abertas; Perdido limpa a data e recusa as propostas.
-- **Cores dos produtos:** Federações `#3AA0FF` (azul), Combat `#FF5CC8` (rosa), Academia `#20D6A4` (verde-água),
+- **Leads:** tela `/leads` com busca e filtro por produto. "Novo lead" (`/leads?novo=1`) cria o lead e o negócio no
+  Pipeline de uma vez; ao escolher GovEscolar aparecem município, UF, cargo, rede de ensino e nº de escolas/alunos.
+  A API valida tudo e devolve erros por campo (422).
+- **Cores dos produtos:** Federações `#3AA0FF` (azul), Combat `#FF5CC8` (rosa), Academia `#20D6A4` (verde-água), GovEscolar `#FFB020` (âmbar),
   guardadas em `produtos.cor`. Ficam fora de limão, roxo e alerta (que já têm significado) e foram validadas
   para daltonismo. Aparecem na faixa dos cards do Pipeline, no filtro por produto e nas barras do Dashboard.
 - **Filtro por produto** (`?produto=ID`): Dashboard e Pipeline. A meta do mês continua sendo da empresa toda.
@@ -135,8 +138,8 @@ db/schema.ts            schema Drizzle (fonte da verdade)
 db/seed.sql             dados de TESTE
 drizzle/                migrations SQL
 scripts/                db-local (SQLite de teste)
-src/components/         marca, layout, ui (shadcn), app (instalar/avisos), dashboard e pipeline
-src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, usePipeline, useInstalarApp
-src/lib/                negocio (valorNegocio), formato, tipos, api, usuario
-src/pages/              Dashboard, Pipeline (kanban), EmBreve
+src/components/         marca, layout, ui (shadcn), app (instalar/avisos/filtro), dashboard, leads e pipeline
+src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, usePipeline, useInstalarApp, useLeads, useProdutos
+src/lib/                negocio (valorNegocio), formato, tipos, api, usuario, opcoes (listas dos formulários)
+src/pages/              Dashboard, Leads, Pipeline (kanban), EmBreve
 ```
