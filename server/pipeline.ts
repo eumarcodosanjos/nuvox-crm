@@ -12,6 +12,7 @@ export async function listarPipeline(): Promise<NegocioPipeline[]> {
   const inicioDoMes = intervalo("mes").inicio;
   const linhas = await consultar<{
     id: number;
+    lead_id: number;
     etapa: Etapa;
     valor_implantacao: number;
     valor_mensal: number;
@@ -26,7 +27,7 @@ export async function listarPipeline(): Promise<NegocioPipeline[]> {
     tarefa_titulo: string | null;
     tarefa_em: string | null;
   }>(
-    `SELECT n.id, n.etapa, n.valor_implantacao, n.valor_mensal, n.valor_avulso,
+    `SELECT n.id, n.lead_id, n.etapa, n.valor_implantacao, n.valor_mensal, n.valor_avulso,
             n.created_at, n.fechado_em,
             l.nome AS lead_nome, l.organizacao,
             n.produto_id, pr.nome AS produto, pr.cor AS produto_cor,
@@ -47,6 +48,7 @@ export async function listarPipeline(): Promise<NegocioPipeline[]> {
 
   return linhas.map((l) => ({
     id: l.id,
+    leadId: l.lead_id,
     etapa: l.etapa,
     leadNome: l.lead_nome,
     organizacao: l.organizacao,

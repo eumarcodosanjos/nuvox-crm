@@ -1,24 +1,25 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { useCriarLead } from "@/hooks/useLeads";
+import { Erro, SkeletonLinhas } from "@/components/dashboard/Estados";
+import { useAtualizarLead, useCriarLead, useLead } from "@/hooks/useLeads";
 import { useProdutos } from "@/hooks/useProdutos";
 import { ErroApi } from "@/lib/api";
 import { lerMoeda, moeda } from "@/lib/formato";
 import { valorNegocio } from "@/lib/negocio";
 import { CARGOS_OPCOES, NOME_GOVESCOLAR, ORIGENS_OPCOES, REDES_OPCOES, TIPOS, UFS } from "@/lib/opcoes";
-import type { Cargo, NovoLead, Origem, RedeEnsino, TipoLead } from "@/lib/tipos";
+import type { Cargo, Etapa, LeadDetalhe, LeadEdicao, Origem, RedeEnsino, TipoLead } from "@/lib/tipos";
 import { AreaTexto, Entrada, Opcoes, Selecao } from "./Campos";
 
-type EtapaInicial = NovoLead["negocio"]["etapa"];
-
-const ETAPAS: { valor: EtapaInicial; rotulo: string }[] = [
+const ETAPAS: { valor: Etapa; rotulo: string }[] = [
   { valor: "novo", rotulo: "Novo" },
   { valor: "contato", rotulo: "Contato" },
   { valor: "proposta", rotulo: "Proposta" },
   { valor: "negociacao", rotulo: "Negociação" },
   { valor: "fechado", rotulo: "Fechado" },
 ];
+/** Na edição dá para marcar como perdido (no cadastro, não faz sentido). */
+const ETAPAS_EDICAO: { valor: Etapa; rotulo: string }[] = [...ETAPAS, { valor: "perdido", rotulo: "Perdido" }];
 
 const vazio = {
   nome: "",
@@ -28,7 +29,7 @@ const vazio = {
   tipo: "" as TipoLead | "",
   origem: "" as Origem | "",
   produtoId: null as number | null,
-  etapa: "novo" as EtapaInicial,
+  etapa: "novo" as Etapa,
   implantacao: "",
   mensal: "",
   avulso: "",
@@ -43,6 +44,34 @@ const vazio = {
 
 const curto = (nome: string) => nome.replace(/^Nuvox\s+/i, "");
 
+/** Centavos → texto do campo ("1.500,00"); zero vira campo vazio. */
+const paraCampo = (centavos: number) =>
+  centavos ? (centavos / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+
+/** Lead salvo → valores do formulário. */
+function deDetalhe(d: LeadDetalhe): typeof vazio {
+  return {
+    nome: d.nome,
+    organizacao: d.organizacao ?? "",
+    telefone: d.telefone ?? "",
+    email: d.email ?? "",
+    tipo: d.tipo,
+    origem: d.origem,
+    produtoId: d.negocio?.produto_id ?? null,
+    etapa: d.negocio?.etapa ?? "novo",
+    implantacao: paraCampo(d.negocio?.valor_implantacao ?? 0),
+    mensal: paraCampo(d.negocio?.valor_mensal ?? 0),
+    avulso: paraCampo(d.negocio?.valor_avulso ?? 0),
+    municipio: d.municipio ?? "",
+    uf: d.uf ?? "",
+    cargo: d.cargo_contato ?? "",
+    rede: d.rede_ensino ?? null,
+    qtdEscolas: d.qtd_escolas != null ? String(d.qtd_escolas) : "",
+    qtdAlunos: d.qtd_alunos != null ? String(d.qtd_alunos) : "",
+    observacoes: d.observacoes ?? "",
+  };
+}
+
 /** Campo do formulário → nome do campo nos erros do servidor (quando diferem). */
 const CHAVE_ERRO: Partial<Record<keyof typeof vazio, string>> = {
   produtoId: "produto_id",
@@ -55,20 +84,31 @@ const CHAVE_ERRO: Partial<Record<keyof typeof vazio, string>> = {
   qtdAlunos: "qtd_alunos",
 };
 
-/** Formulário "Novo lead": cria o lead e o negócio no Pipeline de uma vez. */
+/**
+ * Formulário do lead.
+ * - Sem `leadId`: "Novo lead", cria o lead e o negócio no Pipeline de uma vez.
+ * - Com `leadId`: "Editar lead", carrega o lead e salva lead + negócio (produto, etapa e valores).
+ */
 export function NovoLeadDialog({
   aberto,
   aoMudar,
   aoCriar,
   produtoInicial,
+  leadId = null,
 }: {
   aberto: boolean;
   aoMudar: (aberto: boolean) => void;
+  /** Chamado com o nome do lead depois de criar ou salvar. */
   aoCriar: (nome: string) => void;
   produtoInicial?: number | null;
+  leadId?: number | null;
 }) {
+  const edicao = leadId != null;
   const { data: produtos } = useProdutos();
   const criar = useCriarLead();
+  const atualizar = useAtualizarLead();
+  const salvar = edicao ? atualizar : criar;
+  const detalhe = useLead(aberto ? leadId : null);
   const [f, setF] = useState(vazio);
   const [erros, setErros] = useState<Record<string, string>>({});
   const muda = <K extends keyof typeof vazio>(k: K, v: (typeof vazio)[K]) => {
@@ -77,23 +117,30 @@ export function NovoLeadDialog({
     setErros(({ [chave]: _remover, ...resto }) => resto);
   };
 
-  // Ao abrir: formulário limpo, já com o produto do filtro (se houver).
+  // Ao abrir: formulário limpo (já com o produto do filtro) ou, na edição, os dados do lead.
   useEffect(() => {
-    if (aberto) {
-      setF({ ...vazio, produtoId: produtoInicial ?? null });
-      setErros({});
-      criar.reset();
-    }
+    if (!aberto) return;
+    setErros({});
+    criar.reset();
+    atualizar.reset();
+    if (!edicao) setF({ ...vazio, produtoId: produtoInicial ?? null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aberto]);
+  }, [aberto, leadId]);
+
+  const carregado = detalhe.data && detalhe.data.id === leadId ? detalhe.data : null;
+  useEffect(() => {
+    if (aberto && carregado) setF(deDetalhe(carregado));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aberto, carregado?.id]);
 
   const govEscolar = produtos?.find((p) => p.nome === NOME_GOVESCOLAR);
   const ehGov = govEscolar != null && f.produtoId === govEscolar.id;
 
-  // GovEscolar: sugere o tipo "Secretaria de Educação" se ainda não foi escolhido.
+  // GovEscolar: no cadastro, sugere o tipo "Secretaria de Educação" se ainda não foi escolhido.
   useEffect(() => {
-    if (ehGov && (f.tipo === "" || f.tipo === "outro")) muda("tipo", "secretaria_educacao");
-  }, [ehGov, f.tipo]);
+    if (!edicao && ehGov && (f.tipo === "" || f.tipo === "outro")) muda("tipo", "secretaria_educacao");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ehGov, f.tipo, edicao]);
 
   const valores = useMemo(
     () => ({ implantacao: lerMoeda(f.implantacao), mensal: lerMoeda(f.mensal), avulso: lerMoeda(f.avulso) }),
@@ -119,7 +166,7 @@ export function NovoLeadDialog({
       return;
     }
 
-    const lead: NovoLead = {
+    const lead: LeadEdicao = {
       nome: f.nome,
       organizacao: f.organizacao || null,
       tipo: f.tipo as TipoLead,
@@ -141,25 +188,40 @@ export function NovoLeadDialog({
         valor_avulso: valores.avulso,
       },
     };
-    criar.mutate(lead, {
+    const aoTerminar = {
       onSuccess: () => {
         aoCriar(f.nome.trim());
         aoMudar(false);
       },
-      onError: (erro) => {
+      onError: (erro: Error) => {
         if (erro instanceof ErroApi && Object.keys(erro.campos).length) setErros(erro.campos);
       },
-    });
+    };
+    if (edicao) atualizar.mutate({ id: leadId, lead }, aoTerminar);
+    else criar.mutate({ ...lead, negocio: { ...lead.negocio, etapa: lead.negocio.etapa === "perdido" ? "novo" : lead.negocio.etapa } }, aoTerminar);
   }
 
-  const erroGeral = criar.isError && !(criar.error instanceof ErroApi && Object.keys(criar.error.campos).length);
+  const erroGeral = salvar.isError && !(salvar.error instanceof ErroApi && Object.keys(salvar.error.campos).length);
 
   return (
     <Dialog open={aberto} onOpenChange={aoMudar}>
       <DialogContent className="max-w-2xl p-5 sm:p-7">
-        <DialogTitle>Novo lead</DialogTitle>
-        <DialogDescription>O lead já entra no Pipeline, na etapa que você escolher.</DialogDescription>
+        <DialogTitle>{edicao ? "Editar lead" : "Novo lead"}</DialogTitle>
+        <DialogDescription>
+          {edicao
+            ? "As mudanças já aparecem no Pipeline e no Dashboard."
+            : "O lead já entra no Pipeline, na etapa que você escolher."}
+        </DialogDescription>
 
+        {edicao && !carregado ? (
+          <div className="mt-6">
+            {detalhe.isError ? (
+              <Erro mensagem={detalhe.error.message} aoTentar={() => detalhe.refetch()} />
+            ) : (
+              <SkeletonLinhas linhas={6} altura="h-11" />
+            )}
+          </div>
+        ) : (
         <form onSubmit={enviar} noValidate className="mt-6 flex flex-col gap-7">
           {/* Contato */}
           <section className="grid gap-4 sm:grid-cols-2">
@@ -172,7 +234,7 @@ export function NovoLeadDialog({
               onChange={(e) => muda("nome", e.target.value)}
               erro={erros.nome}
               className="sm:col-span-2"
-              autoFocus
+              autoFocus={!edicao}
             />
             <Entrada
               rotulo="Organização"
@@ -216,6 +278,20 @@ export function NovoLeadDialog({
               onChange={(e) => muda("origem", e.target.value as Origem)}
               erro={erros.origem}
             />
+            <Entrada
+              rotulo="Município"
+              autoComplete="address-level2"
+              value={f.municipio}
+              onChange={(e) => muda("municipio", e.target.value)}
+            />
+            <Selecao
+              rotulo="UF"
+              vazio="Selecione"
+              opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
+              value={f.uf}
+              onChange={(e) => muda("uf", e.target.value)}
+              erro={erros.uf}
+            />
           </section>
 
           {/* Negócio */}
@@ -235,7 +311,7 @@ export function NovoLeadDialog({
               nome="etapa"
               valor={f.etapa}
               aoMudar={(v) => muda("etapa", v)}
-              opcoes={ETAPAS}
+              opcoes={edicao ? ETAPAS_EDICAO : ETAPAS}
               erro={erros.etapa}
             />
             <div className="grid gap-4 sm:grid-cols-3">
@@ -281,20 +357,6 @@ export function NovoLeadDialog({
                 <span aria-hidden className="size-2.5" style={{ background: govEscolar.cor }} />
                 GovEscolar
               </h3>
-              <Entrada
-                rotulo="Município"
-                autoComplete="address-level2"
-                value={f.municipio}
-                onChange={(e) => muda("municipio", e.target.value)}
-              />
-              <Selecao
-                rotulo="UF"
-                vazio="Selecione"
-                opcoes={UFS.map((u) => ({ valor: u, rotulo: u }))}
-                value={f.uf}
-                onChange={(e) => muda("uf", e.target.value)}
-                erro={erros.uf}
-              />
               <Selecao
                 rotulo="Cargo do contato"
                 vazio="Selecione"
@@ -343,7 +405,7 @@ export function NovoLeadDialog({
 
           {(erroGeral || Object.values(erros).some(Boolean)) && (
             <p role="alert" className="border-l-2 border-alerta pl-3 text-sm text-alerta">
-              {erroGeral ? criar.error?.message : "Confira os campos destacados."}
+              {erroGeral ? salvar.error?.message : "Confira os campos destacados."}
             </p>
           )}
 
@@ -351,11 +413,12 @@ export function NovoLeadDialog({
             <Button type="button" variant="fantasma" onClick={() => aoMudar(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={criar.isPending}>
-              {criar.isPending ? "Salvando…" : "Salvar lead"}
+            <Button type="submit" disabled={salvar.isPending}>
+              {salvar.isPending ? "Salvando…" : edicao ? "Salvar alterações" : "Salvar lead"}
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );

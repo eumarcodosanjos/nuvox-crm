@@ -15,6 +15,7 @@ export function PipelineColuna({
   filtrando,
   ativa,
   aoMover,
+  aoEditar,
 }: {
   etapa: EtapaColuna;
   negocios: NegocioPipeline[];
@@ -22,6 +23,7 @@ export function PipelineColuna({
   /** No celular só a coluna da aba escolhida aparece; do tablet para cima, todas. */
   ativa: boolean;
   aoMover: (id: number, etapa: Etapa) => void;
+  aoEditar: (negocio: NegocioPipeline) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: etapa });
   const [limite, setLimite] = useState(POR_PAGINA);
@@ -62,7 +64,7 @@ export function PipelineColuna({
         <>
           <ul className="flex flex-col gap-2">
             {visiveis.map((n) => (
-              <NegocioCard key={n.id} negocio={n} aoMover={(nova) => aoMover(n.id, nova)} />
+              <NegocioCard key={n.id} negocio={n} aoMover={(nova) => aoMover(n.id, nova)} aoEditar={() => aoEditar(n)} />
             ))}
           </ul>
           {restantes > 0 && (

@@ -23,6 +23,7 @@ import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MetaDegraus } from "@/components/dashboard/MetaDegraus";
 import { Icone } from "@/components/marca/Icone";
 import { COLUNAS, COR_COLUNA, TITULO_COLUNA, ehColuna, type EtapaColuna } from "@/components/pipeline/etapas";
+import { NovoLeadDialog } from "@/components/leads/NovoLeadDialog";
 import { CardConteudo } from "@/components/pipeline/NegocioCard";
 import { PipelineColuna, ZonaPerdido } from "@/components/pipeline/PipelineColuna";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,13 @@ export default function Pipeline() {
   const mover = useMoverNegocio();
   const [busca, setBusca] = useState("");
   const [arrastando, setArrastando] = useState<NegocioPipeline | null>(null);
+  const [editando, setEditando] = useState<number | null>(null);
+  const [salvo, setSalvo] = useState<string | null>(null);
+  // Depois de soltar um card, o navegador pode disparar um "click": não abre a edição nesse caso.
+  const fimDoArraste = useRef(0);
+  const abrirEdicao = (n: NegocioPipeline) => {
+    if (Date.now() - fimDoArraste.current > 400) setEditando(n.leadId);
+  };
   /** Celular: uma coluna por vez, escolhida nas abas. */
   const [aba, setAba] = useState<EtapaColuna>("novo");
   const quadroRef = useRef<HTMLDivElement>(null);
@@ -141,6 +149,7 @@ export default function Pipeline() {
 
   function aoSoltar(e: DragEndEvent) {
     setArrastando(null);
+    fimDoArraste.current = Date.now();
     if (e.over) moverPara(Number(e.active.id), e.over.id as Etapa);
   }
 
@@ -187,6 +196,12 @@ export default function Pipeline() {
 
       <Indicadores produto={produto} />
 
+      {salvo && (
+        <p role="status" className="border-l-2 border-limao bg-superficie px-4 py-3 text-sm text-tatame">
+          <strong>{salvo}</strong> salvo.
+        </p>
+      )}
+
       {mover.isError && (
         <p role="alert" className="border-l-2 border-alerta bg-superficie px-4 py-3 text-sm text-alerta">
           Não deu para mover o card: {mover.error.message} Ele voltou para onde estava.
@@ -206,12 +221,15 @@ export default function Pipeline() {
           collisionDetection={colisao}
           onDragStart={aoComecar}
           onDragEnd={aoSoltar}
-          onDragCancel={() => setArrastando(null)}
+          onDragCancel={() => {
+            setArrastando(null);
+            fimDoArraste.current = Date.now();
+          }}
           accessibility={{
             announcements: anuncios,
             screenReaderInstructions: {
               draggable:
-                "Para mover um card, pressione espaço para pegar. Setas para os lados escolhem a coluna; seta para baixo marca como perdido. Espaço solta, Esc cancela.",
+                "Enter abre o lead para editar. Para mover um card, pressione espaço para pegar. Setas para os lados escolhem a coluna; seta para baixo marca como perdido. Espaço solta, Esc cancela.",
             },
           }}
         >
@@ -268,6 +286,7 @@ export default function Pipeline() {
                   filtrando={!!busca.trim()}
                   ativa={aba === etapa}
                   aoMover={moverPara}
+                  aoEditar={abrirEdicao}
                 />
               ))}
             </div>
@@ -278,6 +297,16 @@ export default function Pipeline() {
           </DragOverlay>
         </DndContext>
       )}
+
+      <NovoLeadDialog
+        aberto={editando != null}
+        leadId={editando}
+        aoMudar={(aberto) => !aberto && setEditando(null)}
+        aoCriar={(nome) => {
+          setSalvo(nome);
+          setTimeout(() => setSalvo(null), 5000);
+        }}
+      />
     </div>
   );
 }

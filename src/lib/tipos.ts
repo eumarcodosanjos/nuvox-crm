@@ -89,6 +89,18 @@ export interface NovoLead {
   };
 }
 
+/** Corpo do PATCH /api/leads/:id: os mesmos campos do cadastro, e a etapa pode ser "perdido". */
+export type LeadEdicao = Omit<NovoLead, "negocio"> & {
+  negocio: Omit<NovoLead["negocio"], "etapa"> & { etapa: Etapa };
+};
+
+/** GET /api/leads/:id: tudo o que o formulário de edição precisa. */
+export interface LeadDetalhe extends Omit<LeadEdicao, "negocio"> {
+  id: number;
+  criadoEm: string;
+  negocio: (LeadEdicao["negocio"] & { id: number }) | null;
+}
+
 /* ── Pipeline (kanban) ──────────────────────────────────────────── */
 
 export interface ProdutoResumo {
@@ -101,6 +113,7 @@ export interface ProdutoResumo {
 
 export interface NegocioPipeline {
   id: number;
+  leadId: number;
   etapa: Etapa;
   leadNome: string;
   organizacao: string | null;

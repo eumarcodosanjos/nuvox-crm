@@ -13,6 +13,8 @@
  *   GET    /api/dashboard/origem-leads?periodo=mes
  *   GET    /api/leads                  leads com o negócio mais recente
  *   POST   /api/leads                  cria lead + negócio (422 com { campos } se inválido)
+ *   GET    /api/leads/:id              lead com o negócio mais recente (para editar)
+ *   PATCH  /api/leads/:id              salva lead + negócio (mesmo corpo do POST; etapa pode ser "perdido")
  *   GET    /api/pipeline               negócios abertos + fechados no mês
  *   PATCH  /api/negocios/:id           { etapa }
  *   PATCH  /api/tarefas/:id            { concluida: boolean }
@@ -73,6 +75,20 @@ export async function tratar(req: Request): Promise<Response> {
       if (req.method === "POST") {
         const corpo = await req.json().catch(() => null);
         return json(await leads.criarLead(corpo), 201);
+      }
+    }
+
+    const lead = /^leads\/(\d+)$/.exec(rota);
+    if (lead) {
+      const id = Number(lead[1]);
+      if (req.method === "GET") {
+        const encontrado = await leads.buscarLead(id);
+        return encontrado ? json(encontrado) : erro("Lead não encontrado.", 404);
+      }
+      if (req.method === "PATCH") {
+        const corpo = await req.json().catch(() => null);
+        const salvo = await leads.atualizarLead(id, corpo);
+        return salvo ? json(salvo) : erro("Lead não encontrado.", 404);
       }
     }
 

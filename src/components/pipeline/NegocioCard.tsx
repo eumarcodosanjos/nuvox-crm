@@ -61,9 +61,12 @@ CardConteudo.displayName = "CardConteudo";
 export function NegocioCard({
   negocio,
   aoMover,
+  aoEditar,
 }: {
   negocio: NegocioPipeline;
   aoMover: (etapa: Etapa) => void;
+  /** Toque/clique no card (sem arrastar) abre o lead para edição. */
+  aoEditar: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: negocio.id,
@@ -77,8 +80,13 @@ export function NegocioCard({
         negocio={negocio}
         {...attributes}
         {...listeners}
+        onClick={aoEditar}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") aoEditar();
+          listeners?.onKeyDown?.(e);
+        }}
         aria-roledescription="card arrastável"
-        aria-label={`${negocio.leadNome}, ${negocio.organizacao ?? negocio.produto}, ${moeda(negocio.valor)}. Espaço para pegar e mover.`}
+        aria-label={`${negocio.leadNome}, ${negocio.organizacao ?? negocio.produto}, ${moeda(negocio.valor)}. Enter para editar, espaço para pegar e mover.`}
         className={cn(
           "cursor-grab touch-manipulation transition-colors hover:border-degrau-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limao",
           isDragging && "opacity-30",
@@ -92,7 +100,7 @@ export function NegocioCard({
         Reuniões
       </a>
       <div className="absolute right-0 top-0">
-        <MoverParaMenu etapaAtual={negocio.etapa} nome={negocio.leadNome} aoMover={aoMover} />
+        <MoverParaMenu etapaAtual={negocio.etapa} nome={negocio.leadNome} aoMover={aoMover} aoEditar={aoEditar} />
       </div>
     </li>
   );

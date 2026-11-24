@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Check, Plus, Search } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Plus, Search } from "lucide-react";
 import { FiltroProduto } from "@/components/app/FiltroProduto";
 import { Erro, SkeletonLinhas, Vazio } from "@/components/dashboard/Estados";
 import { EtapaTag } from "@/components/leads/EtapaTag";
@@ -20,7 +20,7 @@ export default function Leads() {
   const [params, setParams] = useSearchParams();
   const [produto] = useProdutoSelecionado();
   const [busca, setBusca] = useState("");
-  const [criado, setCriado] = useState<string | null>(null);
+  const [criado, setCriado] = useState<{ nome: string; editado: boolean } | null>(null);
 
   // ?novo=1 (botões "+ Novo lead" do Dashboard e do Pipeline) abre o formulário.
   const formularioAberto = params.get("novo") === "1";
@@ -33,6 +33,20 @@ export default function Leads() {
         return novo;
       },
       { replace: !aberto },
+    );
+
+  // ?editar=<id> abre o lead para edição (também vem do Pipeline).
+  const editarParam = Number(params.get("editar"));
+  const editando = Number.isInteger(editarParam) && editarParam > 0 ? editarParam : null;
+  const editar = (id: number | null) =>
+    setParams(
+      (atual) => {
+        const novo = new URLSearchParams(atual);
+        if (id != null) novo.set("editar", String(id));
+        else novo.delete("editar");
+        return novo;
+      },
+      { replace: id == null },
     );
 
   useEffect(() => {
@@ -84,7 +98,7 @@ export default function Leads() {
         <p role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-limao bg-superficie px-4 py-3 text-sm text-tatame">
           <Icone icone={Check} className="size-4 text-limao" />
           <span>
-            <strong>{criado}</strong> cadastrado e já está no Pipeline.
+            <strong>{criado.nome}</strong> {criado.editado ? "salvo." : "cadastrado e já está no Pipeline."}
           </span>
           <Link to="/pipeline" className="flex min-h-11 items-center gap-1.5 text-[11px] font-semibold uppercase tracking-rotulo hover:text-limao">
             Ver no pipeline <Icone icone={ArrowRight} className="size-4" />
@@ -132,10 +146,24 @@ export default function Leads() {
                   </thead>
                   <tbody>
                     {filtrados.map((l) => (
-                      <tr key={l.id} className="border-b border-borda last:border-b-0">
-                        <td className="px-4 py-3">
-                          <p className="font-semibold text-tatame">{l.nome}</p>
-                          {l.organizacao && <p className="text-xs text-apoio">{l.organizacao}</p>}
+                      <tr
+                        key={l.id}
+                        onClick={() => editar(l.id)}
+                        className="cursor-pointer border-b border-borda transition-colors last:border-b-0 hover:bg-podio/60"
+                      >
+                        <td className="px-4 py-1.5">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editar(l.id);
+                            }}
+                            className="flex min-h-11 flex-col justify-center text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limao"
+                            aria-label={`Editar ${l.nome}`}
+                          >
+                            <span className="font-semibold text-tatame underline-offset-4 hover:underline">{l.nome}</span>
+                            {l.organizacao && <span className="text-xs text-apoio">{l.organizacao}</span>}
+                          </button>
                         </td>
                         <td className="px-4 py-3">
                           {l.negocio ? (
@@ -164,21 +192,36 @@ export default function Leads() {
               {/* Celular: cartões */}
               <ul className="flex flex-col gap-2 md:hidden">
                 {filtrados.map((l) => (
-                  <li key={l.id} className="relative border border-borda bg-superficie py-3.5 pl-5 pr-4">
-                    {l.negocio && (
-                      <span aria-hidden className="absolute -left-px -top-px bottom-[-1px] w-1.5" style={{ background: l.negocio.produtoCor }} />
-                    )}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        {l.negocio && <p className="rotulo mb-1 !text-[10px]">{l.negocio.produto}</p>}
-                        <p className="font-semibold text-tatame">{l.nome}</p>
-                        {l.organizacao && <p className="text-sm text-apoio">{l.organizacao}</p>}
-                      </div>
-                      {l.negocio && <EtapaTag etapa={l.negocio.etapa} className="shrink-0" />}
-                    </div>
-                    <p className="mt-2 text-sm text-apoio">
-                      {[l.negocio ? moeda(l.negocio.valor) : null, local(l) || null, l.telefone].filter(Boolean).join(" · ")}
-                    </p>
+                  <li key={l.id}>
+                    <button
+                      type="button"
+                      onClick={() => editar(l.id)}
+                      aria-label={`Editar ${l.nome}`}
+                      className="relative flex w-full items-center gap-3 border border-borda bg-superficie py-3 pl-4 pr-2 text-left transition-colors active:border-degrau-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limao"
+                    >
+                      {l.negocio && (
+                        <span aria-hidden className="absolute -left-px -top-px bottom-[-1px] w-1" style={{ background: l.negocio.produtoCor }} />
+                      )}
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-2">
+                          {l.negocio && <span className="rotulo truncate !text-[10px]">{curto(l.negocio.produto)}</span>}
+                          {l.negocio && <EtapaTag etapa={l.negocio.etapa} className="ml-auto shrink-0" />}
+                        </span>
+                        <span className="mt-1 block truncate text-[15px] font-semibold text-tatame">{l.nome}</span>
+                        {l.organizacao && <span className="block truncate text-[13px] text-apoio">{l.organizacao}</span>}
+                        {(() => {
+                          const extra = [
+                            l.negocio && l.negocio.valor > 0 ? moeda(l.negocio.valor) : null,
+                            local(l) || null,
+                            l.telefone,
+                          ].filter(Boolean);
+                          return extra.length ? (
+                            <span className="num mt-1 block truncate text-xs text-apoio">{extra.join(" · ")}</span>
+                          ) : null;
+                        })()}
+                      </span>
+                      <Icone icone={ChevronRight} className="size-5 shrink-0 text-apoio" />
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -187,7 +230,18 @@ export default function Leads() {
         </>
       )}
 
-      <NovoLeadDialog aberto={formularioAberto} aoMudar={abrirFormulario} aoCriar={setCriado} produtoInicial={produto} />
+      <NovoLeadDialog
+        aberto={formularioAberto}
+        aoMudar={abrirFormulario}
+        aoCriar={(nome) => setCriado({ nome, editado: false })}
+        produtoInicial={produto}
+      />
+      <NovoLeadDialog
+        aberto={editando != null}
+        leadId={editando}
+        aoMudar={(aberto) => !aberto && editar(null)}
+        aoCriar={(nome) => setCriado({ nome, editado: true })}
+      />
     </div>
   );
 }
