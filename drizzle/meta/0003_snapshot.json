@@ -1,0 +1,734 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "00b3c8ab-8729-441a-a258-fa8a5dd7c6c7",
+  "prevId": "051042a8-92ef-45d7-bd2c-f82ef1e4efaa",
+  "tables": {
+    "leads": {
+      "name": "leads",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "organizacao": {
+          "name": "organizacao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tipo": {
+          "name": "tipo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'outro'"
+        },
+        "origem": {
+          "name": "origem",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'outro'"
+        },
+        "telefone": {
+          "name": "telefone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "leads_created_at_idx": {
+          "name": "leads_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "leads_tipo_check": {
+          "name": "leads_tipo_check",
+          "value": "\"leads\".\"tipo\" IN ('federacao', 'academia', 'organizador_evento', 'prefeitura', 'outro')"
+        },
+        "leads_origem_check": {
+          "name": "leads_origem_check",
+          "value": "\"leads\".\"origem\" IN ('whatsapp', 'instagram', 'indicacao', 'site', 'outro')"
+        }
+      }
+    },
+    "licencas": {
+      "name": "licencas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "produto_id": {
+          "name": "produto_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valor_mensal": {
+          "name": "valor_mensal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "inicio": {
+          "name": "inicio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ultimo_reajuste_ipca": {
+          "name": "ultimo_reajuste_ipca",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ativa": {
+          "name": "ativa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        }
+      },
+      "indexes": {
+        "licencas_ativa_idx": {
+          "name": "licencas_ativa_idx",
+          "columns": [
+            "ativa"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "licencas_lead_id_leads_id_fk": {
+          "name": "licencas_lead_id_leads_id_fk",
+          "tableFrom": "licencas",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "licencas_produto_id_produtos_id_fk": {
+          "name": "licencas_produto_id_produtos_id_fk",
+          "tableFrom": "licencas",
+          "tableTo": "produtos",
+          "columnsFrom": [
+            "produto_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "metas": {
+      "name": "metas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "mes": {
+          "name": "mes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valor": {
+          "name": "valor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "metas_mes_unico": {
+          "name": "metas_mes_unico",
+          "columns": [
+            "mes"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "metas_mes_check": {
+          "name": "metas_mes_check",
+          "value": "\"metas\".\"mes\" = strftime('%Y-%m-01', \"metas\".\"mes\")"
+        }
+      }
+    },
+    "negocios": {
+      "name": "negocios",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "lead_id": {
+          "name": "lead_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "produto_id": {
+          "name": "produto_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "etapa": {
+          "name": "etapa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'novo'"
+        },
+        "valor_implantacao": {
+          "name": "valor_implantacao",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "valor_mensal": {
+          "name": "valor_mensal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "valor_avulso": {
+          "name": "valor_avulso",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "fechado_em": {
+          "name": "fechado_em",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "negocios_etapa_idx": {
+          "name": "negocios_etapa_idx",
+          "columns": [
+            "etapa"
+          ],
+          "isUnique": false
+        },
+        "negocios_fechado_em_idx": {
+          "name": "negocios_fechado_em_idx",
+          "columns": [
+            "fechado_em"
+          ],
+          "isUnique": false
+        },
+        "negocios_lead_idx": {
+          "name": "negocios_lead_idx",
+          "columns": [
+            "lead_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "negocios_lead_id_leads_id_fk": {
+          "name": "negocios_lead_id_leads_id_fk",
+          "tableFrom": "negocios",
+          "tableTo": "leads",
+          "columnsFrom": [
+            "lead_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "negocios_produto_id_produtos_id_fk": {
+          "name": "negocios_produto_id_produtos_id_fk",
+          "tableFrom": "negocios",
+          "tableTo": "produtos",
+          "columnsFrom": [
+            "produto_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "negocios_etapa_check": {
+          "name": "negocios_etapa_check",
+          "value": "\"negocios\".\"etapa\" IN ('novo', 'contato', 'proposta', 'negociacao', 'fechado', 'perdido')"
+        },
+        "negocios_valores_check": {
+          "name": "negocios_valores_check",
+          "value": "\"negocios\".\"valor_implantacao\" >= 0 AND \"negocios\".\"valor_mensal\" >= 0 AND \"negocios\".\"valor_avulso\" >= 0"
+        }
+      }
+    },
+    "produtos": {
+      "name": "produtos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "modelo_cobranca": {
+          "name": "modelo_cobranca",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cor": {
+          "name": "cor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'#B5B5B0'"
+        }
+      },
+      "indexes": {
+        "produtos_nome_unique": {
+          "name": "produtos_nome_unique",
+          "columns": [
+            "nome"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "produtos_nome_check": {
+          "name": "produtos_nome_check",
+          "value": "\"produtos\".\"nome\" IN ('Nuvox Federações', 'Nuvox Combat', 'Nuvox Academia')"
+        }
+      }
+    },
+    "propostas": {
+      "name": "propostas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "negocio_id": {
+          "name": "negocio_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "enviada_em": {
+          "name": "enviada_em",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "validade_dias": {
+          "name": "validade_dias",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 30
+        },
+        "vence_em": {
+          "name": "vence_em",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "generated": {
+            "as": "(date(enviada_em, '+' || validade_dias || ' days'))",
+            "type": "stored"
+          }
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'aberta'"
+        }
+      },
+      "indexes": {
+        "propostas_vence_em_idx": {
+          "name": "propostas_vence_em_idx",
+          "columns": [
+            "status",
+            "vence_em"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "propostas_negocio_id_negocios_id_fk": {
+          "name": "propostas_negocio_id_negocios_id_fk",
+          "tableFrom": "propostas",
+          "tableTo": "negocios",
+          "columnsFrom": [
+            "negocio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "propostas_status_check": {
+          "name": "propostas_status_check",
+          "value": "\"propostas\".\"status\" IN ('aberta', 'aceita', 'recusada', 'vencida')"
+        }
+      }
+    },
+    "reunioes_kime": {
+      "name": "reunioes_kime",
+      "columns": {
+        "origem_id": {
+          "name": "origem_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "negocio_id": {
+          "name": "negocio_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dia": {
+          "name": "dia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hora": {
+          "name": "hora",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "link_meet": {
+          "name": "link_meet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "versao": {
+          "name": "versao",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "reunioes_kime_negocio_idx": {
+          "name": "reunioes_kime_negocio_idx",
+          "columns": [
+            "negocio_id",
+            "dia",
+            "hora"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "reunioes_kime_negocio_id_negocios_id_fk": {
+          "name": "reunioes_kime_negocio_id_negocios_id_fk",
+          "tableFrom": "reunioes_kime",
+          "tableTo": "negocios",
+          "columnsFrom": [
+            "negocio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "tarefas": {
+      "name": "tarefas",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "negocio_id": {
+          "name": "negocio_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canal": {
+          "name": "canal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "data_hora": {
+          "name": "data_hora",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "concluida": {
+          "name": "concluida",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "tarefas_data_hora_idx": {
+          "name": "tarefas_data_hora_idx",
+          "columns": [
+            "data_hora"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "tarefas_negocio_id_negocios_id_fk": {
+          "name": "tarefas_negocio_id_negocios_id_fk",
+          "tableFrom": "tarefas",
+          "tableTo": "negocios",
+          "columnsFrom": [
+            "negocio_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "tarefas_canal_check": {
+          "name": "tarefas_canal_check",
+          "value": "\"tarefas\".\"canal\" IN ('whatsapp', 'email', 'video', 'ligacao', 'financeiro')"
+        }
+      }
+    },
+    "usuarios": {
+      "name": "usuarios",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "nome": {
+          "name": "nome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "senha_hash": {
+          "name": "senha_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "usuarios_email_unique": {
+          "name": "usuarios_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
