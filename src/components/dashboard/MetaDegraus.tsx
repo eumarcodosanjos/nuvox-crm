@@ -7,9 +7,12 @@ const DEGRAUS = 5;
 export function MetaDegraus({
   percentual: fracao,
   meta,
+  semCabecalho = false,
 }: {
   percentual: number | null;
   meta: number | null;
+  /** Esconde "Meta do mês · R$ … / %" quando o card já mostra esses números. */
+  semCabecalho?: boolean;
 }) {
   if (meta == null || fracao == null) {
     return <p className="mt-4 text-xs text-apoio">Sem meta cadastrada para este mês.</p>;
@@ -17,7 +20,7 @@ export function MetaDegraus({
   const preenchidos = Math.min(DEGRAUS, Math.floor(fracao * DEGRAUS));
   return (
     <div className="mt-4">
-      <div className="mb-2 flex items-baseline justify-between gap-2">
+      <div className={cn("mb-2 flex items-baseline justify-between gap-2", semCabecalho && "sr-only")}>
         <span className="rotulo">Meta do mês · {moeda(meta)}</span>
         <span className="num text-xs font-semibold text-tatame">{percentual(fracao)}</span>
       </div>

@@ -9,11 +9,14 @@
  *   GET    /api/dashboard/propostas-vencendo
  *   GET    /api/dashboard/tarefas-hoje
  *   GET    /api/dashboard/origem-leads?periodo=mes
+ *   GET    /api/pipeline               negócios abertos + fechados no mês
+ *   PATCH  /api/negocios/:id           { etapa }
  *   PATCH  /api/tarefas/:id            { concluida: boolean }
  */
 import { ErroBanco } from "./db.js";
 import * as dash from "./dashboard.js";
 import { periodoValido } from "./periodo.js";
+import * as pipeline from "./pipeline.js";
 
 const json = (dados: unknown, status = 200) =>
   new Response(JSON.stringify(dados), {
@@ -47,6 +50,18 @@ export async function tratar(req: Request): Promise<Response> {
         case "dashboard/origem-leads":
           return json(await dash.origemLeads(periodo));
       }
+    }
+
+    if (req.method === "GET" && rota === "pipeline") {
+      return json(await pipeline.listarPipeline());
+    }
+
+    const negocio = /^negocios\/(\d+)$/.exec(rota);
+    if (negocio && req.method === "PATCH") {
+      const corpo = (await req.json().catch(() => null)) as { etapa?: unknown } | null;
+      if (!pipeline.etapaValida(corpo?.etapa)) return erro("Envie { etapa } com uma etapa válida.", 400);
+      const movido = await pipeline.moverNegocio(Number(negocio[1]), corpo.etapa);
+      return movido ? json(movido) : erro("Negócio não encontrado.", 404);
     }
 
     const tarefa = /^tarefas\/(\d+)$/.exec(rota);

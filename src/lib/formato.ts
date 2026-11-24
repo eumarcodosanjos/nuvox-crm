@@ -15,6 +15,26 @@ export const percentual = (fracao: number) => pct.format(fracao);
 
 export const horario = (iso: string) => hora.format(new Date(iso));
 
+const diaMes = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+const diaSP = (d: Date) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d); // YYYY-MM-DD
+
+/** "Hoje 14:00", "Amanhã 09:30", "Atrasada · 20/11" ou "25/11 10:00" (fuso de São Paulo). */
+export function quando(iso: string, agora = new Date()): string {
+  const data = new Date(iso);
+  const dia = diaSP(data);
+  const hoje = diaSP(agora);
+  const amanha = diaSP(new Date(agora.getTime() + 86_400_000));
+  if (dia === hoje) return `Hoje ${horario(iso)}`;
+  if (dia === amanha) return `Amanhã ${horario(iso)}`;
+  if (dia < hoje) return `Atrasada · ${diaMes.format(data)}`;
+  return `${diaMes.format(data)} ${horario(iso)}`;
+}
+
+/** Compara textos ignorando maiúsculas e acentos (busca). */
+export const normalizar = (s: string) =>
+  s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
 export function saudacao(agora = new Date()): string {
   const h = Number(
     new Intl.DateTimeFormat("pt-BR", { hour: "numeric", hour12: false, timeZone: "America/Sao_Paulo" }).format(agora),

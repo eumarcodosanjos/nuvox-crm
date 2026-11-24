@@ -44,6 +44,20 @@ export interface DashboardKpis {
   implantacoes: { quantidade: number; valor: number };
 }
 
+/* ── Pipeline (kanban) ──────────────────────────────────────────── */
+
+export interface NegocioPipeline {
+  id: number;
+  etapa: Etapa;
+  leadNome: string;
+  organizacao: string | null;
+  produto: NomeProduto;
+  valor: number;
+  criadoEm: string;
+  fechadoEm: string | null;
+  proximaTarefa: { titulo: string; dataHora: string } | null;
+}
+
 export interface FunilEtapa {
   etapa: Exclude<Etapa, "perdido">;
   quantidade: number;

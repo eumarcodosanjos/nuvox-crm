@@ -99,6 +99,9 @@ npx wrangler d1 migrations apply nuvox-crm --remote
 - **Pipeline aberto:** negócios em novo, contato, proposta ou negociação.
 - **Fechado no período / Implantações:** negócios com `fechado_em` dentro do período escolhido.
 - **Barra de meta:** sempre a meta do **mês corrente** contra o fechado no mês, em 5 degraus de 20%.
+- **Pipeline (kanban):** colunas Novo → Fechado no mês. Arraste os cards (mouse, toque ou teclado:
+  espaço pega, ←/→ trocam de coluna, ↓ marca como perdido) ou use o menu ⋯ "Mover para".
+  Entrar em Fechado grava `fechado_em` e aceita as propostas abertas; Perdido limpa a data e recusa as propostas.
 - **Funil:** as etapas abertas mostram a foto atual; "Fechado" mostra os fechados no período. Conversão, ciclo médio e ticket médio usam o histórico completo.
 
 ## Estrutura
@@ -110,8 +113,8 @@ db/schema.ts            schema Drizzle (fonte da verdade)
 db/seed.sql             dados de TESTE
 drizzle/                migrations SQL
 scripts/                db-local (SQLite de teste)
-src/components/         marca, layout, ui (shadcn) e dashboard
-src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads
+src/components/         marca, layout, ui (shadcn), dashboard e pipeline
+src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, usePipeline
 src/lib/                negocio (valorNegocio), formato, tipos, api, usuario
-src/pages/              Dashboard, EmBreve
+src/pages/              Dashboard, Pipeline (kanban), EmBreve
 ```
