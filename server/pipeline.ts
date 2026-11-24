@@ -20,13 +20,16 @@ export async function listarPipeline(): Promise<NegocioPipeline[]> {
     fechado_em: string | null;
     lead_nome: string;
     organizacao: string | null;
+    produto_id: number;
     produto: NomeProduto;
+    produto_cor: string;
     tarefa_titulo: string | null;
     tarefa_em: string | null;
   }>(
     `SELECT n.id, n.etapa, n.valor_implantacao, n.valor_mensal, n.valor_avulso,
             n.created_at, n.fechado_em,
-            l.nome AS lead_nome, l.organizacao, pr.nome AS produto,
+            l.nome AS lead_nome, l.organizacao,
+            n.produto_id, pr.nome AS produto, pr.cor AS produto_cor,
             t.titulo AS tarefa_titulo, t.data_hora AS tarefa_em
        FROM negocios n
        JOIN leads l     ON l.id = n.lead_id
@@ -47,7 +50,9 @@ export async function listarPipeline(): Promise<NegocioPipeline[]> {
     etapa: l.etapa,
     leadNome: l.lead_nome,
     organizacao: l.organizacao,
+    produtoId: l.produto_id,
     produto: l.produto,
+    produtoCor: l.produto_cor,
     valor: valorNegocio(l),
     criadoEm: l.created_at,
     fechadoEm: l.fechado_em,

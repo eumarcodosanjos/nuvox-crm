@@ -21,12 +21,14 @@ export const CardConteudo = forwardRef<
     <div
       ref={ref}
       className={cn(
-        "border border-borda bg-superficie py-3.5 pl-4 pr-12 text-left",
+        "relative border border-borda bg-superficie py-3.5 pl-5 pr-12 text-left",
         flutuando && "cursor-grabbing border-tatame",
         className,
       )}
       {...props}
     >
+      {/* Faixa com a cor do produto */}
+      <span aria-hidden className="absolute -left-px -top-px bottom-[-1px] w-1.5" style={{ background: negocio.produtoCor }} />
       <p className="rotulo mb-1.5 !text-[10px]">{negocio.produto}</p>
       <p className="text-[15px] font-semibold leading-snug text-tatame">{negocio.leadNome}</p>
       <p className="mt-1 text-sm text-apoio">

@@ -31,6 +31,9 @@ export function TarefaItem({
             {tarefa.titulo}
           </span>
           <span className="num block text-xs text-apoio">
+            {tarefa.produtoCor && (
+              <span aria-hidden className="mr-1.5 inline-block size-2 align-[1px]" style={{ background: tarefa.produtoCor }} />
+            )}
             {ROTULO_CANAL[tarefa.canal]} · {horario(tarefa.dataHora)}
           </span>
         </span>

@@ -4,6 +4,8 @@
  *
  * Sem login por enquanto: o CRM é de uso pessoal. Quem tiver a URL acessa os dados.
  *
+ *   GET    /api/produtos                  id, nome, cor e modelo de cobrança
+ *   (as rotas do dashboard aceitam &produto=<id> para filtrar por produto)
  *   GET    /api/dashboard/kpis?periodo=mes
  *   GET    /api/dashboard/funil?periodo=mes
  *   GET    /api/dashboard/propostas-vencendo
@@ -26,6 +28,12 @@ const json = (dados: unknown, status = 200) =>
 
 const erro = (mensagem: string, status: number) => json({ erro: mensagem }, status);
 
+/** ?produto=<id> filtra por produto; ausente ou inválido = todos. */
+function produtoValido(v: string | null): number | null {
+  const n = Number(v);
+  return v && Number.isInteger(n) && n > 0 ? n : null;
+}
+
 /** Rota relativa a /api, ex.: "dashboard/kpis". */
 function rotaDe(url: URL): string {
   return url.pathname.replace(/^\/api\/?/, "").replace(/^\/+|\/+$/g, "");
@@ -35,20 +43,23 @@ export async function tratar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const rota = rotaDe(url);
   const periodo = periodoValido(url.searchParams.get("periodo"));
+  const produto = produtoValido(url.searchParams.get("produto"));
 
   try {
     if (req.method === "GET") {
       switch (rota) {
+        case "produtos":
+          return json(await dash.listarProdutos());
         case "dashboard/kpis":
-          return json(await dash.kpis(periodo));
+          return json(await dash.kpis(periodo, produto));
         case "dashboard/funil":
-          return json(await dash.funil(periodo));
+          return json(await dash.funil(periodo, produto));
         case "dashboard/propostas-vencendo":
-          return json(await dash.propostasVencendo());
+          return json(await dash.propostasVencendo(produto));
         case "dashboard/tarefas-hoje":
-          return json(await dash.tarefasHoje());
+          return json(await dash.tarefasHoje(produto));
         case "dashboard/origem-leads":
-          return json(await dash.origemLeads(periodo));
+          return json(await dash.origemLeads(periodo, produto));
       }
     }
 

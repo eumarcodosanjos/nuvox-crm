@@ -17,6 +17,7 @@ import {
   type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
 import { Plus, Search } from "lucide-react";
+import { FiltroProduto } from "@/components/app/FiltroProduto";
 import { Erro } from "@/components/dashboard/Estados";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MetaDegraus } from "@/components/dashboard/MetaDegraus";
@@ -27,6 +28,7 @@ import { PipelineColuna, ZonaPerdido } from "@/components/pipeline/PipelineColun
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
+import { useProdutoSelecionado } from "@/hooks/useProdutos";
 import { useMoverNegocio, usePipeline } from "@/hooks/usePipeline";
 import { moeda, normalizar, percentual, plural } from "@/lib/formato";
 import type { Etapa, NegocioPipeline } from "@/lib/tipos";
@@ -103,13 +105,15 @@ export default function Pipeline() {
     useSensor(KeyboardSensor, { coordinateGetter: pularColunas }),
   );
 
+  const [produto] = useProdutoSelecionado();
   const filtrados = useMemo(() => {
     const termo = normalizar(busca.trim());
-    if (!termo || !negocios) return negocios ?? [];
-    return negocios.filter((n) =>
-      normalizar(`${n.leadNome} ${n.organizacao ?? ""} ${n.produto}`).includes(termo),
+    return (negocios ?? []).filter(
+      (n) =>
+        (produto == null || n.produtoId === produto) &&
+        (!termo || normalizar(`${n.leadNome} ${n.organizacao ?? ""} ${n.produto}`).includes(termo)),
     );
-  }, [negocios, busca]);
+  }, [negocios, busca, produto]);
 
   function moverPara(id: number, etapa: Etapa) {
     const atual = negocios?.find((n) => n.id === id);
@@ -165,7 +169,9 @@ export default function Pipeline() {
         </div>
       </header>
 
-      <Indicadores />
+      <FiltroProduto className="-mt-2" />
+
+      <Indicadores produto={produto} />
 
       {mover.isError && (
         <p role="alert" className="border-l-2 border-alerta bg-superficie px-4 py-3 text-sm text-alerta">
@@ -196,7 +202,7 @@ export default function Pipeline() {
           }}
         >
           <p className="-mb-3 text-xs text-apoio" aria-live="polite">
-            {busca
+            {busca || produto
               ? `${plural(filtrados.length, "negócio encontrado", "negócios encontrados")}`
               : `${plural(filtrados.length, "negócio", "negócios")} no quadro · arraste os cards ou use o menu ⋯`}
           </p>
@@ -223,8 +229,8 @@ export default function Pipeline() {
   );
 }
 
-function Indicadores() {
-  const { data, isPending, isError } = useDashboardKpis("mes");
+function Indicadores({ produto }: { produto: number | null }) {
+  const { data, isPending, isError } = useDashboardKpis("mes", produto);
   if (isError) return null;
   return (
     <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
@@ -243,7 +249,7 @@ function Indicadores() {
       />
       <KpiCard
         carregando={isPending}
-        rotulo="Meta do mês"
+        rotulo={produto ? "Meta do mês · todos os produtos" : "Meta do mês"}
         valor={data && (data.meta.percentual != null ? percentual(data.meta.percentual) : "Sem meta")}
         detalhe={data?.meta.valor ? `${moeda(data.meta.fechadoMes)} de ${moeda(data.meta.valor)}` : undefined}
       >

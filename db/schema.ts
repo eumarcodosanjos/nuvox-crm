@@ -39,6 +39,8 @@ export const produtos = sqliteTable(
     id: id(),
     nome: text("nome", { enum: PRODUTOS }).notNull().unique(),
     modelo_cobranca: text("modelo_cobranca").notNull(),
+    /** Cor de identidade do produto no CRM (hex). Não usar limão, roxo nem alerta: já têm significado. */
+    cor: text("cor").notNull().default("#B5B5B0"),
   },
   (t) => [check("produtos_nome_check", sql`${t.nome} IN (${lista(PRODUTOS)})`)],
 );

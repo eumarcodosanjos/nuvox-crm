@@ -46,12 +46,22 @@ export interface DashboardKpis {
 
 /* ── Pipeline (kanban) ──────────────────────────────────────────── */
 
+export interface ProdutoResumo {
+  id: number;
+  nome: NomeProduto;
+  /** Cor de identidade do produto (hex). */
+  cor: string;
+  modeloCobranca: string;
+}
+
 export interface NegocioPipeline {
   id: number;
   etapa: Etapa;
   leadNome: string;
   organizacao: string | null;
+  produtoId: number;
   produto: NomeProduto;
+  produtoCor: string;
   valor: number;
   criadoEm: string;
   fechadoEm: string | null;
@@ -69,7 +79,7 @@ export interface FunilResposta {
   conversao: number | null;
   cicloMedioDias: number | null;
   ticketMedio: number | null;
-  produtos: { id: number; nome: NomeProduto; modeloCobranca: string; valorAberto: number; negocios: number }[];
+  produtos: (ProdutoResumo & { valorAberto: number; negocios: number })[];
 }
 
 export interface PropostaVencendo {
@@ -79,6 +89,7 @@ export interface PropostaVencendo {
   leadNome: string;
   organizacao: string | null;
   produto: NomeProduto;
+  produtoCor: string;
   valor: number;
 }
 
@@ -88,6 +99,8 @@ export interface TarefaHoje {
   canal: Canal;
   dataHora: string;
   concluida: boolean;
+  /** Cor do produto do negócio ligado à tarefa (null se a tarefa não tem negócio). */
+  produtoCor: string | null;
 }
 
 export interface OrigemLeads {

@@ -19,6 +19,7 @@ export function PropostaItem({ proposta }: { proposta: PropostaVencendo }) {
         <p className="text-sm font-semibold text-tatame">{proposta.organizacao ?? nome}</p>
         <p className="text-xs text-apoio">
           {proposta.organizacao ? `${nome} · ` : ""}
+          <span aria-hidden className="mr-1.5 inline-block size-2 align-[1px]" style={{ background: proposta.produtoCor }} />
           {proposta.produto} · <span className="num">{moeda(proposta.valor)}</span>
         </p>
       </div>

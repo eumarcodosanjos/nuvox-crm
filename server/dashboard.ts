@@ -16,6 +16,7 @@ import type {
   Origem,
   OrigemLeads,
   Periodo,
+  ProdutoResumo,
   PropostaVencendo,
   TarefaHoje,
 } from "../src/lib/tipos.js";
@@ -36,6 +37,11 @@ interface LinhaNegocio {
 const ABERTAS: Etapa[] = ["novo", "contato", "proposta", "negociacao"];
 const DIA_MS = 86_400_000;
 
+/** Filtro de produto: id do produto, ou null para todos. */
+export type FiltroProduto = number | null;
+const doProduto = <T extends { produto_id: number }>(lista: T[], produto: FiltroProduto) =>
+  produto == null ? lista : lista.filter((n) => n.produto_id === produto);
+
 const soma = (ns: LinhaNegocio[]) => ns.reduce((t, n) => t + valorNegocio(n), 0);
 const noIntervalo = (iso: string | null, i: { inicio: string; fim: string }) =>
   !!iso && iso >= i.inicio && iso < i.fim;
@@ -47,22 +53,25 @@ function carregarNegocios() {
   );
 }
 
-export async function kpis(periodo: Periodo): Promise<DashboardKpis> {
-  const [negocios, [licencas], [meta]] = await Promise.all([
+export async function kpis(periodo: Periodo, produto: FiltroProduto = null): Promise<DashboardKpis> {
+  const [todos, [licencas], [meta]] = await Promise.all([
     carregarNegocios(),
     consultar<{ valor: number; clientes: number }>(
       `SELECT COALESCE(SUM(valor_mensal), 0) AS valor, COUNT(DISTINCT lead_id) AS clientes
-         FROM licencas WHERE ativa = 1`,
+         FROM licencas WHERE ativa = 1 AND (? IS NULL OR produto_id = ?)`,
+      [produto, produto],
     ),
     consultar<{ valor: number }>(`SELECT valor FROM metas WHERE mes = ?`, [primeiroDiaDoMesSP()]),
   ]);
 
   const doPeriodo = intervalo(periodo);
   const doMes = intervalo("mes");
+  const negocios = doProduto(todos, produto);
   const abertos = negocios.filter((n) => ABERTAS.includes(n.etapa));
   const fechados = negocios.filter((n) => n.etapa === "fechado");
   const fechadosPeriodo = fechados.filter((n) => noIntervalo(n.fechado_em, doPeriodo));
-  const fechadoMes = soma(fechados.filter((n) => noIntervalo(n.fechado_em, doMes)));
+  // A meta é uma só para a empresa: compara com o fechado no mês de TODOS os produtos.
+  const fechadoMes = soma(todos.filter((n) => n.etapa === "fechado" && noIntervalo(n.fechado_em, doMes)));
   const comImplantacao = fechadosPeriodo.filter((n) => n.valor_implantacao > 0);
   const valorMeta = meta?.valor ?? null;
 
@@ -82,13 +91,12 @@ export async function kpis(periodo: Periodo): Promise<DashboardKpis> {
   };
 }
 
-export async function funil(periodo: Periodo): Promise<FunilResposta> {
-  const [negocios, produtos] = await Promise.all([
+export async function funil(periodo: Periodo, produto: FiltroProduto = null): Promise<FunilResposta> {
+  const [todos, produtos] = await Promise.all([
     carregarNegocios(),
-    consultar<{ id: number; nome: NomeProduto; modelo_cobranca: string }>(
-      `SELECT id, nome, modelo_cobranca FROM produtos ORDER BY id`,
-    ),
+    listarProdutos(),
   ]);
+  const negocios = doProduto(todos, produto);
   const doPeriodo = intervalo(periodo);
   const fechados = negocios.filter((n) => n.etapa === "fechado");
   const perdidos = negocios.filter((n) => n.etapa === "perdido");
@@ -108,7 +116,8 @@ export async function funil(periodo: Periodo): Promise<FunilResposta> {
     .filter((n) => n.fechado_em)
     .map((n) => (Date.parse(n.fechado_em!) - Date.parse(n.created_at)) / DIA_MS);
 
-  const abertos = negocios.filter((n) => ABERTAS.includes(n.etapa));
+  // "Pipeline por produto" mostra sempre os três produtos, para comparar.
+  const abertos = todos.filter((n) => ABERTAS.includes(n.etapa));
 
   return {
     etapas,
@@ -116,19 +125,20 @@ export async function funil(periodo: Periodo): Promise<FunilResposta> {
     cicloMedioDias: ciclos.length ? Math.round(ciclos.reduce((a, b) => a + b, 0) / ciclos.length) : null,
     ticketMedio: fechados.length ? Math.round(soma(fechados) / fechados.length) : null,
     produtos: produtos.map((p) => {
-      const doProduto = abertos.filter((n) => n.produto_id === p.id);
+      const abertosDoProduto = abertos.filter((n) => n.produto_id === p.id);
       return {
         id: p.id,
         nome: p.nome,
-        modeloCobranca: p.modelo_cobranca,
-        valorAberto: soma(doProduto),
-        negocios: doProduto.length,
+        cor: p.cor,
+        modeloCobranca: p.modeloCobranca,
+        valorAberto: soma(abertosDoProduto),
+        negocios: abertosDoProduto.length,
       };
     }),
   };
 }
 
-export async function propostasVencendo(limite = 6): Promise<PropostaVencendo[]> {
+export async function propostasVencendo(produto: FiltroProduto = null, limite = 6): Promise<PropostaVencendo[]> {
   const linhas = await consultar<{
     id: number;
     vence_em: string;
@@ -136,22 +146,23 @@ export async function propostasVencendo(limite = 6): Promise<PropostaVencendo[]>
     lead_nome: string;
     organizacao: string | null;
     produto: NomeProduto;
+    produto_cor: string;
     valor_implantacao: number;
     valor_mensal: number;
     valor_avulso: number;
   }>(
     `SELECT p.id, p.vence_em,
             CAST(julianday(p.vence_em) - julianday(?) AS INTEGER) AS dias,
-            l.nome AS lead_nome, l.organizacao, pr.nome AS produto,
+            l.nome AS lead_nome, l.organizacao, pr.nome AS produto, pr.cor AS produto_cor,
             n.valor_implantacao, n.valor_mensal, n.valor_avulso
        FROM propostas p
        JOIN negocios n  ON n.id = p.negocio_id
        JOIN leads l     ON l.id = n.lead_id
        JOIN produtos pr ON pr.id = n.produto_id
-      WHERE p.status = 'aberta'
+      WHERE p.status = 'aberta' AND (? IS NULL OR n.produto_id = ?)
       ORDER BY p.vence_em ASC
       LIMIT ?`,
-    [dataHojeSP(), limite],
+    [dataHojeSP(), produto, produto, limite],
   );
   return linhas.map((l) => ({
     id: l.id,
@@ -160,11 +171,13 @@ export async function propostasVencendo(limite = 6): Promise<PropostaVencendo[]>
     leadNome: l.lead_nome,
     organizacao: l.organizacao,
     produto: l.produto,
+    produtoCor: l.produto_cor,
     valor: valorNegocio(l),
   }));
 }
 
-export async function tarefasHoje(): Promise<TarefaHoje[]> {
+/** Com filtro de produto, mostra só tarefas ligadas a negócios daquele produto. */
+export async function tarefasHoje(produto: FiltroProduto = null): Promise<TarefaHoje[]> {
   const { inicio, fim } = intervalo("hoje");
   const linhas = await consultar<{
     id: number;
@@ -172,12 +185,16 @@ export async function tarefasHoje(): Promise<TarefaHoje[]> {
     canal: TarefaHoje["canal"];
     data_hora: string;
     concluida: number;
+    produto_cor: string | null;
   }>(
-    `SELECT id, titulo, canal, data_hora, concluida
-       FROM tarefas
-      WHERE data_hora >= ? AND data_hora < ?
-      ORDER BY data_hora ASC, id ASC`,
-    [inicio, fim],
+    `SELECT t.id, t.titulo, t.canal, t.data_hora, t.concluida, pr.cor AS produto_cor
+       FROM tarefas t
+       LEFT JOIN negocios n  ON n.id = t.negocio_id
+       LEFT JOIN produtos pr ON pr.id = n.produto_id
+      WHERE t.data_hora >= ? AND t.data_hora < ?
+        AND (? IS NULL OR n.produto_id = ?)
+      ORDER BY t.data_hora ASC, t.id ASC`,
+    [inicio, fim, produto, produto],
   );
   return linhas.map((t) => ({
     id: t.id,
@@ -185,7 +202,15 @@ export async function tarefasHoje(): Promise<TarefaHoje[]> {
     canal: t.canal,
     dataHora: t.data_hora,
     concluida: !!t.concluida,
+    produtoCor: t.produto_cor,
   }));
+}
+
+export async function listarProdutos(): Promise<ProdutoResumo[]> {
+  const linhas = await consultar<{ id: number; nome: NomeProduto; cor: string; modelo_cobranca: string }>(
+    `SELECT id, nome, cor, modelo_cobranca FROM produtos ORDER BY id`,
+  );
+  return linhas.map((p) => ({ id: p.id, nome: p.nome, cor: p.cor, modeloCobranca: p.modelo_cobranca }));
 }
 
 export async function marcarTarefa(id: number, concluida: boolean): Promise<boolean> {
@@ -198,14 +223,16 @@ export async function marcarTarefa(id: number, concluida: boolean): Promise<bool
 
 const ORIGENS: Origem[] = ["whatsapp", "instagram", "indicacao", "site", "outro"];
 
-export async function origemLeads(periodo: Periodo): Promise<OrigemLeads[]> {
+/** Com filtro de produto, conta só leads que têm negócio daquele produto. */
+export async function origemLeads(periodo: Periodo, produto: FiltroProduto = null): Promise<OrigemLeads[]> {
   const { inicio, fim } = intervalo(periodo);
   const linhas = await consultar<{ origem: Origem; quantidade: number }>(
-    `SELECT origem, COUNT(*) AS quantidade
-       FROM leads
-      WHERE created_at >= ? AND created_at < ?
-      GROUP BY origem`,
-    [inicio, fim],
+    `SELECT l.origem, COUNT(*) AS quantidade
+       FROM leads l
+      WHERE l.created_at >= ? AND l.created_at < ?
+        AND (? IS NULL OR EXISTS (SELECT 1 FROM negocios n WHERE n.lead_id = l.id AND n.produto_id = ?))
+      GROUP BY l.origem`,
+    [inicio, fim, produto, produto],
   );
   const mapa = new Map(linhas.map((l) => [l.origem, l.quantidade]));
   return ORIGENS.map((origem) => ({ origem, quantidade: mapa.get(origem) ?? 0 })).sort(

@@ -8,11 +8,14 @@ export function MetaDegraus({
   percentual: fracao,
   meta,
   semCabecalho = false,
+  geral = false,
 }: {
   percentual: number | null;
   meta: number | null;
   /** Esconde "Meta do mês · R$ … / %" quando o card já mostra esses números. */
   semCabecalho?: boolean;
+  /** Com filtro de produto ativo: deixa claro que a meta é da empresa toda. */
+  geral?: boolean;
 }) {
   if (meta == null || fracao == null) {
     return <p className="mt-4 text-xs text-apoio">Sem meta cadastrada para este mês.</p>;
@@ -21,7 +24,9 @@ export function MetaDegraus({
   return (
     <div className="mt-4">
       <div className={cn("mb-2 flex items-baseline justify-between gap-2", semCabecalho && "sr-only")}>
-        <span className="rotulo">Meta do mês · {moeda(meta)}</span>
+        <span className="rotulo">
+          Meta do mês{geral ? " (todos os produtos)" : ""} · {moeda(meta)}
+        </span>
         <span className="num text-xs font-semibold text-tatame">{percentual(fracao)}</span>
       </div>
       <div

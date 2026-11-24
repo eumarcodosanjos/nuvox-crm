@@ -9,10 +9,12 @@ import { OrigemBarra } from "@/components/dashboard/OrigemBarra";
 import { ProdutoLinha } from "@/components/dashboard/ProdutoLinha";
 import { PropostaItem } from "@/components/dashboard/PropostaItem";
 import { TarefaItem } from "@/components/dashboard/TarefaItem";
+import { FiltroProduto } from "@/components/app/FiltroProduto";
 import { Icone } from "@/components/marca/Icone";
 import { Button } from "@/components/ui/button";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useFunil } from "@/hooks/useFunil";
+import { useProdutoSelecionado } from "@/hooks/useProdutos";
 import { useOrigemLeads } from "@/hooks/useOrigemLeads";
 import { usePropostasVencendo } from "@/hooks/usePropostasVencendo";
 import { useMarcarTarefa, useTarefasHoje } from "@/hooks/useTarefasHoje";
@@ -71,6 +73,9 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Filtro por produto */}
+      <FiltroProduto className="-mt-2" />
+
       {/* 2. Indicadores */}
       <Indicadores periodo={periodo} tituloPeriodo={tituloPeriodo} />
 
@@ -112,7 +117,8 @@ function FiltroPeriodo({ valor, aoMudar }: { valor: Periodo; aoMudar: (p: Period
 }
 
 function Indicadores({ periodo, tituloPeriodo }: { periodo: Periodo; tituloPeriodo: string }) {
-  const { data, isPending, isError, error, refetch } = useDashboardKpis(periodo);
+  const [produto] = useProdutoSelecionado();
+  const { data, isPending, isError, error, refetch } = useDashboardKpis(periodo, produto);
 
   if (isError) {
     return (
@@ -143,7 +149,7 @@ function Indicadores({ periodo, tituloPeriodo }: { periodo: Periodo; tituloPerio
         valor={data && moeda(data.fechadoPeriodo.valor)}
         detalhe={data && plural(data.fechadoPeriodo.negocios, "negócio fechado", "negócios fechados")}
       >
-        {data && <MetaDegraus percentual={data.meta.percentual} meta={data.meta.valor} />}
+        {data && <MetaDegraus percentual={data.meta.percentual} meta={data.meta.valor} geral={produto != null} />}
       </KpiCard>
       <KpiCard
         carregando={isPending}
@@ -156,7 +162,8 @@ function Indicadores({ periodo, tituloPeriodo }: { periodo: Periodo; tituloPerio
 }
 
 function FunilEProdutos({ periodo }: { periodo: Periodo }) {
-  const { data, isPending, isError, error, refetch } = useFunil(periodo);
+  const [produto] = useProdutoSelecionado();
+  const { data, isPending, isError, error, refetch } = useFunil(periodo, produto);
   const maxEtapa = Math.max(0, ...(data?.etapas.map((e) => e.quantidade) ?? []));
   const maxProduto = Math.max(0, ...(data?.produtos.map((p) => p.valorAberto) ?? []));
   const semNegocios = data && data.etapas.every((e) => e.quantidade === 0);
@@ -226,7 +233,8 @@ function Metrica({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 function PropostasVencendo() {
-  const { data, isPending, isError, error, refetch } = usePropostasVencendo();
+  const [produto] = useProdutoSelecionado();
+  const { data, isPending, isError, error, refetch } = usePropostasVencendo(produto);
   return (
     <Bloco titulo="Propostas vencendo" className="flex-[1_1_300px]" ocupado={isPending}>
       {isPending && <SkeletonLinhas linhas={4} altura="h-10" />}
@@ -244,7 +252,8 @@ function PropostasVencendo() {
 }
 
 function TarefasDeHoje() {
-  const { data, isPending, isError, error, refetch } = useTarefasHoje();
+  const [produto] = useProdutoSelecionado();
+  const { data, isPending, isError, error, refetch } = useTarefasHoje(produto);
   const marcar = useMarcarTarefa();
   const pendentes = data?.filter((t) => !t.concluida).length ?? 0;
 
@@ -285,7 +294,8 @@ function TarefasDeHoje() {
 }
 
 function OrigemDosLeads({ periodo, tituloPeriodo }: { periodo: Periodo; tituloPeriodo: string }) {
-  const { data, isPending, isError, error, refetch } = useOrigemLeads(periodo);
+  const [produto] = useProdutoSelecionado();
+  const { data, isPending, isError, error, refetch } = useOrigemLeads(periodo, produto);
   const total = data?.reduce((t, o) => t + o.quantidade, 0) ?? 0;
   const maximo = Math.max(0, ...(data?.map((o) => o.quantidade) ?? []));
 

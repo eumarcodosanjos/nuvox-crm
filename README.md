@@ -81,7 +81,7 @@ na Vercel está ligado ao GitHub e **não precisa de variável de ambiente nenhu
 
 | Tabela | Para quê |
 |---|---|
-| `produtos` | Nuvox Federações, Combat e Academia, com o modelo de cobrança |
+| `produtos` | Nuvox Federações, Combat e Academia, com o modelo de cobrança e a **cor** de identidade |
 | `leads` | Contatos (`tipo` e `origem` validados por CHECK) |
 | `negocios` | Oportunidades por etapa: novo → contato → proposta → negociacao → fechado / perdido |
 | `propostas` | `vence_em` é **coluna gerada** (`enviada_em + validade_dias`) |
@@ -104,7 +104,7 @@ npm run db:gerar
 npx wrangler d1 migrations apply nuvox-crm --remote
 ```
 
-(O `wrangler` pede login na Cloudflare na primeira vez. As migrations `0000` e `0001` já estão aplicadas e registradas.)
+(O `wrangler` pede login na Cloudflare na primeira vez. As migrations `0000` a `0002` já estão aplicadas e registradas.)
 
 ### Dados de teste
 
@@ -120,6 +120,10 @@ npx wrangler d1 migrations apply nuvox-crm --remote
 - **Pipeline (kanban):** colunas Novo → Fechado no mês. Arraste os cards (mouse, toque ou teclado:
   espaço pega, ←/→ trocam de coluna, ↓ marca como perdido) ou use o menu ⋯ "Mover para".
   Entrar em Fechado grava `fechado_em` e aceita as propostas abertas; Perdido limpa a data e recusa as propostas.
+- **Cores dos produtos:** Federações `#3AA0FF` (azul), Combat `#FF5CC8` (rosa), Academia `#20D6A4` (verde-água),
+  guardadas em `produtos.cor`. Ficam fora de limão, roxo e alerta (que já têm significado) e foram validadas
+  para daltonismo. Aparecem na faixa dos cards do Pipeline, no filtro por produto e nas barras do Dashboard.
+- **Filtro por produto** (`?produto=ID`): Dashboard e Pipeline. A meta do mês continua sendo da empresa toda.
 - **Funil:** as etapas abertas mostram a foto atual; "Fechado" mostra os fechados no período. Conversão, ciclo médio e ticket médio usam o histórico completo.
 
 ## Estrutura
