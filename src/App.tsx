@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "@/pages/Dashboard";
 
 const EmBreve = lazy(() => import("@/pages/EmBreve"));
+const ReunioesKime = lazy(() => import("@/pages/ReunioesKime"));
 const Pipeline = lazy(() => import("@/pages/Pipeline"));
 
 const EM_BREVE = ["leads", "propostas", "conversas", "tarefas", "clientes", "relatorios"];
@@ -22,6 +23,7 @@ export default function App() {
               </Suspense>
             }
           />
+          <Route path="/reunioes/:id" element={<Suspense fallback={null}><ReunioesKime /></Suspense>} />
           {EM_BREVE.map((rota) => (
             <Route
               key={rota}

@@ -16,6 +16,7 @@
  *   PATCH  /api/tarefas/:id            { concluida: boolean }
  */
 import { ErroBanco } from "./db.js";
+import { tratarKime } from "./kime.js";
 import * as dash from "./dashboard.js";
 import { periodoValido } from "./periodo.js";
 import * as pipeline from "./pipeline.js";
@@ -46,6 +47,7 @@ export async function tratar(req: Request): Promise<Response> {
   const produto = produtoValido(url.searchParams.get("produto"));
 
   try {
+    if (rota.startsWith("integracoes/kime/")) return await tratarKime(req, rota);
     if (req.method === "GET") {
       switch (rota) {
         case "produtos":

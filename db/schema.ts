@@ -153,3 +153,18 @@ export const metas = sqliteTable(
     check("metas_mes_check", sql`${t.mes} = strftime('%Y-%m-01', ${t.mes})`),
   ],
 );
+
+/** Reuniões vinculadas pelo Kime. Consultadas apenas pela integração autenticada. */
+export const reunioesKime = sqliteTable(
+  "reunioes_kime",
+  {
+    origem_id: text("origem_id").primaryKey().notNull(),
+    negocio_id: integer("negocio_id").notNull().references(() => negocios.id, { onDelete: "cascade" }),
+    titulo: text("titulo").notNull(),
+    dia: text("dia").notNull(),
+    hora: text("hora"),
+    link_meet: text("link_meet"),
+    versao: integer("versao").notNull(),
+  },
+  (t) => [index("reunioes_kime_negocio_idx").on(t.negocio_id, t.dia, t.hora)],
+);

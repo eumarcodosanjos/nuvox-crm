@@ -80,6 +80,12 @@ export function NegocioCard({
           isDragging && "opacity-30",
         )}
       />
+      <a
+        href={`https://kime-prototipo-navegacao.eumarcoodosanjos.chatgpt.site/api/nuvox-crm/negocios/${negocio.id}/abrir`}
+        className="mt-1 inline-block px-4 py-2 text-xs font-semibold text-apoio hover:text-tatame"
+      >
+        Reuniões
+      </a>
       <div className="absolute right-0.5 top-0.5">
         <MoverParaMenu etapaAtual={negocio.etapa} nome={negocio.leadNome} aoMover={aoMover} />
       </div>
