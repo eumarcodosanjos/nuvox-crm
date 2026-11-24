@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, Check, ChevronRight, Plus, Search } from "lucide-react";
+import { CabecalhoPagina } from "@/components/app/CabecalhoPagina";
 import { FiltroProduto } from "@/components/app/FiltroProduto";
 import { Erro, SkeletonLinhas, Vazio } from "@/components/dashboard/Estados";
 import { EtapaTag } from "@/components/leads/EtapaTag";
@@ -67,32 +68,22 @@ export default function Leads() {
   }, [leads, busca, produto]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div>
-          <p className="rotulo">Comercial</p>
-          <h1 className="mt-2 font-titulo text-[30px] text-tatame sm:text-[40px]">Leads</h1>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <label className="relative flex-1 sm:w-72 sm:flex-none">
-            <span className="sr-only">Buscar lead</span>
-            <Icone icone={Search} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-apoio" />
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Nome, organização, cidade ou telefone"
-              className="min-h-11 w-full border border-borda bg-superficie pl-9 pr-3 text-sm text-tatame placeholder:text-apoio focus:border-tatame focus:outline-none"
-            />
-          </label>
-          <Button className="w-full sm:w-auto" onClick={() => abrirFormulario(true)}>
-            <Icone icone={Plus} className="size-4" strokeWidth={3} />
-            Novo lead
-          </Button>
-        </div>
-      </header>
+    <div className="flex flex-col gap-3 sm:gap-6">
+      <CabecalhoPagina sobretitulo={<span className="rotulo">Comercial</span>} titulo="Leads" novoLead={{ aoClicar: () => abrirFormulario(true) }}>
+        <label className="relative flex-1 sm:w-72 sm:flex-none">
+          <span className="sr-only">Buscar lead</span>
+          <Icone icone={Search} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-apoio" />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Nome, organização, cidade ou telefone"
+            className="min-h-11 w-full border border-borda bg-superficie pl-9 pr-3 text-sm text-tatame placeholder:text-apoio focus:border-tatame focus:outline-none"
+          />
+        </label>
+      </CabecalhoPagina>
 
-      <FiltroProduto className="-mt-2" />
+      <FiltroProduto className="sm:-mt-2" />
 
       {criado && (
         <p role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-limao bg-superficie px-4 py-3 text-sm text-tatame">

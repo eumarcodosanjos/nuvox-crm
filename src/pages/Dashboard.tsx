@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Bloco } from "@/components/dashboard/Bloco";
 import { Erro, SkeletonLinhas, Vazio } from "@/components/dashboard/Estados";
 import { FunilBarra } from "@/components/dashboard/FunilBarra";
@@ -9,9 +9,10 @@ import { OrigemBarra } from "@/components/dashboard/OrigemBarra";
 import { ProdutoLinha } from "@/components/dashboard/ProdutoLinha";
 import { PropostaItem } from "@/components/dashboard/PropostaItem";
 import { TarefaItem } from "@/components/dashboard/TarefaItem";
+import { CabecalhoPagina } from "@/components/app/CabecalhoPagina";
 import { FiltroProduto } from "@/components/app/FiltroProduto";
+import { IndicadoresCompactos, type CelulaIndicador } from "@/components/dashboard/IndicadoresCompactos";
 import { Icone } from "@/components/marca/Icone";
-import { Button } from "@/components/ui/button";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useFunil } from "@/hooks/useFunil";
 import { useProdutoSelecionado } from "@/hooks/useProdutos";
@@ -29,7 +30,6 @@ import {
   saudacao,
 } from "@/lib/formato";
 import type { DashboardKpis, OrigemLeads, Periodo } from "@/lib/tipos";
-import { Skeleton } from "@/components/ui/skeleton";
 import { USUARIO } from "@/lib/usuario";
 import { cn } from "@/lib/utils";
 
@@ -46,43 +46,26 @@ export default function Dashboard() {
     // Celular: uma coluna, gaps menores e tarefas logo depois dos números (ordem via `order`).
     <div className="flex flex-col gap-3 sm:gap-6">
       {/* 1. Cabeçalho */}
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:gap-y-4">
-        <div className="flex w-full items-end justify-between gap-3 sm:block sm:w-auto">
-          <div>
-            <p className="text-sm text-apoio">
-              {saudacao()}, {primeiroNome(USUARIO.nome)}
-            </p>
-            <h1 className="mt-1 font-titulo text-[26px] text-tatame sm:text-[44px]">Dashboard</h1>
-          </div>
-          <Button asChild size="icone" className="sm:hidden">
-            <Link to="/leads?novo=1" aria-label="Novo lead">
-              <Icone icone={Plus} className="!size-5" strokeWidth={3} />
-            </Link>
-          </Button>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <FiltroPeriodo
-            valor={periodo}
-            aoMudar={(p) =>
-              setParams(
-                (atual) => {
-                  const novo = new URLSearchParams(atual);
-                  if (p === "mes") novo.delete("periodo");
-                  else novo.set("periodo", p);
-                  return novo;
-                },
-                { replace: true },
-              )
-            }
-          />
-          <Button asChild className="hidden sm:inline-flex">
-            <Link to="/leads?novo=1">
-              <Icone icone={Plus} className="size-4" strokeWidth={3} />
-              Novo lead
-            </Link>
-          </Button>
-        </div>
-      </header>
+      <CabecalhoPagina
+        sobretitulo={`${saudacao()}, ${primeiroNome(USUARIO.nome)}`}
+        titulo="Dashboard"
+        novoLead={{ para: "/leads?novo=1" }}
+      >
+        <FiltroPeriodo
+          valor={periodo}
+          aoMudar={(p) =>
+            setParams(
+              (atual) => {
+                const novo = new URLSearchParams(atual);
+                if (p === "mes") novo.delete("periodo");
+                else novo.set("periodo", p);
+                return novo;
+              },
+              { replace: true },
+            )
+          }
+        />
+      </CabecalhoPagina>
 
       {/* Filtro por produto */}
       <FiltroProduto className="sm:-mt-2" />
@@ -187,7 +170,7 @@ function IndicadoresCelular({
   tituloPeriodo: string;
   geral: boolean;
 }) {
-  const celulas = dados
+  const celulas: CelulaIndicador[] | null = dados
     ? [
         {
           rotulo: "Receita recorrente",
@@ -215,67 +198,8 @@ function IndicadoresCelular({
           detalhe: `${moedaCurta(dados.implantacoes.valor)} ${tituloPeriodo}`,
         },
       ]
-    : [];
-  const meta = dados?.meta;
-  const preenchidos = meta?.percentual != null ? Math.min(5, Math.floor(meta.percentual * 5)) : 0;
-
-  return (
-    <section aria-label="Indicadores" aria-busy={carregando || undefined} className="border border-borda bg-superficie sm:hidden">
-      <dl className="grid grid-cols-2">
-        {(carregando || !dados ? Array.from({ length: 4 }, () => null) : celulas).map((c, i) => (
-          <div
-            key={c?.rotulo ?? i}
-            className={cn("min-w-0 px-3.5 py-3", i % 2 === 0 && "border-r border-borda", i < 2 && "border-b border-borda")}
-          >
-            {c ? (
-              <>
-                <dt className="rotulo truncate !text-[10px]">{c.rotulo}</dt>
-                <dd
-                  className={cn("num mt-2 truncate font-titulo text-[19px] max-[359px]:text-[15px]", c.destaque ? "text-limao" : "text-tatame")}
-                  title={c.completo}
-                >
-                  {c.valor}
-                </dd>
-                <dd className="num mt-1.5 truncate text-xs text-apoio">{c.detalhe}</dd>
-              </>
-            ) : (
-              <div aria-hidden className="flex flex-col gap-2">
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-5 w-4/5" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            )}
-          </div>
-        ))}
-      </dl>
-      <div className="flex min-h-11 items-center gap-2.5 border-t border-borda px-3.5 py-2.5">
-        <span className="rotulo shrink-0 !text-[10px]">{geral ? "Meta · geral" : "Meta do mês"}</span>
-        {meta?.valor && meta.percentual != null ? (
-          <>
-            <span
-              role="meter"
-              aria-label="Meta do mês"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(meta.percentual * 100)}
-              aria-valuetext={`${percentual(meta.percentual)} da meta`}
-              className="grid w-16 shrink-0 grid-cols-5 gap-0.5"
-            >
-              {Array.from({ length: 5 }, (_, i) => (
-                <span key={i} className={cn("h-1.5", i < preenchidos ? "bg-limao" : "bg-borda")} />
-              ))}
-            </span>
-            <span className="num ml-auto truncate text-[13px]" title={`${moeda(meta.fechadoMes)} de ${moeda(meta.valor)}`}>
-              <span className="font-semibold text-tatame">{percentual(meta.percentual)}</span>
-              <span className="text-apoio"> de {moedaCurta(meta.valor)}</span>
-            </span>
-          </>
-        ) : (
-          <span className="ml-auto text-xs text-apoio">{carregando ? "" : "Sem meta cadastrada"}</span>
-        )}
-      </div>
-    </section>
-  );
+    : null;
+  return <IndicadoresCompactos celulas={celulas} meta={dados?.meta} geral={geral} carregando={carregando} quantidade={4} />;
 }
 
 function FunilEProdutos({ periodo }: { periodo: Periodo }) {

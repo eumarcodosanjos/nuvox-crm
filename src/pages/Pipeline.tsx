@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   DndContext,
   DragOverlay,
@@ -16,8 +15,10 @@ import {
   type DragStartEvent,
   type KeyboardCoordinateGetter,
 } from "@dnd-kit/core";
-import { Plus, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { CabecalhoPagina } from "@/components/app/CabecalhoPagina";
 import { FiltroProduto } from "@/components/app/FiltroProduto";
+import { IndicadoresCompactos, type CelulaIndicador } from "@/components/dashboard/IndicadoresCompactos";
 import { Erro } from "@/components/dashboard/Estados";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MetaDegraus } from "@/components/dashboard/MetaDegraus";
@@ -26,7 +27,6 @@ import { COLUNAS, COR_COLUNA, TITULO_COLUNA, ehColuna, type EtapaColuna } from "
 import { NovoLeadDialog } from "@/components/leads/NovoLeadDialog";
 import { CardConteudo } from "@/components/pipeline/NegocioCard";
 import { PipelineColuna, ZonaPerdido } from "@/components/pipeline/PipelineColuna";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useProdutoSelecionado } from "@/hooks/useProdutos";
@@ -164,35 +164,23 @@ export default function Pipeline() {
     onDragCancel: () => "Movimento cancelado.",
   };
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3 sm:gap-6">
       {/* Cabeçalho */}
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div>
-          <p className="rotulo">Comercial</p>
-          <h1 className="mt-2 font-titulo text-[30px] text-tatame sm:text-[40px]">Pipeline de vendas</h1>
-        </div>
-        <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
-          <label className="relative flex-1 sm:w-72 sm:flex-none">
-            <span className="sr-only">Buscar lead</span>
-            <Icone icone={Search} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-apoio" />
-            <input
-              type="search"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar lead ou organização"
-              className="min-h-11 w-full border border-borda bg-superficie pl-9 pr-3 text-sm text-tatame placeholder:text-apoio focus:border-tatame focus:outline-none"
-            />
-          </label>
-          <Button asChild className="w-full sm:w-auto">
-            <Link to="/leads?novo=1">
-              <Icone icone={Plus} className="size-4" strokeWidth={3} />
-              Novo lead
-            </Link>
-          </Button>
-        </div>
-      </header>
+      <CabecalhoPagina sobretitulo={<span className="rotulo">Comercial</span>} titulo="Pipeline de vendas" tituloCurto="Pipeline" novoLead={{ para: "/leads?novo=1" }}>
+        <label className="relative flex-1 sm:w-72 sm:flex-none">
+          <span className="sr-only">Buscar lead</span>
+          <Icone icone={Search} className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-apoio" />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar lead ou organização"
+            className="min-h-11 w-full border border-borda bg-superficie pl-9 pr-3 text-sm text-tatame placeholder:text-apoio focus:border-tatame focus:outline-none"
+          />
+        </label>
+      </CabecalhoPagina>
 
-      <FiltroProduto className="-mt-2" />
+      <FiltroProduto className="sm:-mt-2" />
 
       <Indicadores produto={produto} />
 
@@ -344,7 +332,7 @@ function Indicadores({ produto }: { produto: number | null }) {
   );
 }
 
-/** Celular: os três indicadores em linhas curtas, para o quadro aparecer logo. */
+/** Celular: mesma caixa de indicadores do Dashboard, com os 2 números do Pipeline e a meta. */
 function FaixaIndicadores({
   dados,
   carregando,
@@ -354,67 +342,25 @@ function FaixaIndicadores({
   carregando: boolean;
   produto: number | null;
 }) {
-  const meta = dados?.meta;
-  const preenchidos = meta?.percentual != null ? Math.min(5, Math.floor(meta.percentual * 5)) : 0;
-  const linhas = dados
+  const celulas: CelulaIndicador[] | null = dados
     ? [
         {
           rotulo: "Em negociação",
-          valor: moeda(dados.pipelineAberto.valor),
-          detalhe: plural(dados.pipelineAberto.negocios, "aberto", "abertos"),
+          valor: moedaCurta(dados.pipelineAberto.valor),
+          completo: moeda(dados.pipelineAberto.valor),
+          detalhe: plural(dados.pipelineAberto.negocios, "negócio aberto", "negócios abertos"),
         },
         {
           rotulo: "Fechado no mês",
-          valor: moeda(dados.fechadoPeriodo.valor),
+          valor: moedaCurta(dados.fechadoPeriodo.valor),
+          completo: moeda(dados.fechadoPeriodo.valor),
           detalhe: plural(dados.fechadoPeriodo.negocios, "negócio", "negócios"),
           destaque: true,
         },
       ]
-    : [];
+    : null;
   return (
-    <dl
-      className="divide-y divide-borda border border-borda bg-superficie text-sm sm:hidden"
-      aria-busy={carregando || undefined}
-    >
-      {carregando || !dados || !meta ? (
-        Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-4 w-28" />
-          </div>
-        ))
-      ) : (
-        <>
-          {linhas.map((l) => (
-            <div key={l.rotulo} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
-              <dt className="rotulo shrink-0 !text-[10px]">{l.rotulo}</dt>
-              <dd className="min-w-0 truncate text-right">
-                <span className={cn("num font-semibold", l.destaque ? "text-limao" : "text-tatame")}>{l.valor}</span>
-                <span className="num text-xs text-apoio max-[359px]:hidden"> · {l.detalhe}</span>
-              </dd>
-            </div>
-          ))}
-          <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-            <dt className="rotulo shrink-0 !text-[10px]">{produto ? "Meta · geral" : "Meta do mês"}</dt>
-            {meta.valor && meta.percentual != null ? (
-              <dd className="flex min-w-0 items-center gap-2.5">
-                <span aria-hidden className="grid w-16 shrink-0 grid-cols-5 gap-0.5">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <span key={i} className={cn("h-1.5", i < preenchidos ? "bg-limao" : "bg-borda")} />
-                  ))}
-                </span>
-                <span className="num truncate">
-                  <span className="font-semibold text-tatame">{percentual(meta.percentual)}</span>
-                  <span className="text-xs text-apoio max-[359px]:hidden"> de {moedaCurta(meta.valor)}</span>
-                </span>
-              </dd>
-            ) : (
-              <dd className="text-xs text-apoio">Sem meta</dd>
-            )}
-          </div>
-        </>
-      )}
-    </dl>
+    <IndicadoresCompactos celulas={celulas} meta={dados?.meta} geral={produto != null} carregando={carregando} quantidade={2} />
   );
 }
 
