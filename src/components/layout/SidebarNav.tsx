@@ -13,6 +13,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { InstalarApp } from "@/components/app/InstalarApp";
 import { Icone } from "@/components/marca/Icone";
 import { NuvoxLogo } from "@/components/marca/NuvoxLogo";
 import { USUARIO } from "@/lib/usuario";
@@ -87,6 +88,7 @@ export function SidebarNav() {
         <nav aria-label="Principal" className="flex-1 overflow-y-auto">
           <Itens />
         </nav>
+        <InstalarApp className="mb-4 w-full" />
         <Usuario />
       </aside>
 
@@ -112,6 +114,7 @@ export function SidebarNav() {
             <Itens aoNavegar={() => setAberto(false)} />
           </nav>
           <div className="mt-4">
+            <InstalarApp className="mb-4 w-full" />
             <Usuario />
           </div>
         </div>

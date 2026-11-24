@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { AvisosApp } from "@/components/app/AvisosApp";
 import { SidebarNav } from "./SidebarNav";
 
 /** Layout: menu lateral + área principal. */
@@ -11,6 +12,7 @@ export function AppLayout() {
           <Outlet />
         </div>
       </main>
+      <AvisosApp />
     </div>
   );
 }

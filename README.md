@@ -17,6 +17,24 @@ serve o site e repassa `/api/*` para o Worker: nenhum segredo fica na Vercel.
 - **API:** Cloudflare Worker (`worker/index.ts`) com o roteador em `server/rotas.ts`; no `npm run dev` o mesmo roteador roda dentro do Vite
 - **Banco:** Cloudflare D1 (SQLite). Schema em Drizzle (`db/schema.ts`), migrations em `drizzle/`
 
+## App instalável (PWA)
+
+O Nuvox CRM instala como app no celular e no computador, sem loja de aplicativos:
+
+| Onde | Como instalar |
+|---|---|
+| **Android** (Chrome) | Menu do app → **Instalar app**, ou o aviso "Instalar" do Chrome |
+| **iPhone / iPad** (Safari) | Menu do app → **Instalar app** mostra o passo a passo: Compartilhar → Adicionar à Tela de Início |
+| **Computador** (Chrome / Edge) | Menu do app → **Instalar app**, ou o ícone de instalar na barra de endereço |
+| **Mac** (Safari) | Arquivo → Adicionar ao Dock (o botão do app mostra o passo a passo) |
+
+- **Ícones:** `public/icones/`, gerados do símbolo do manual (versão maskable para Android e apple-touch-icon para iOS).
+- **Manifesto e service worker:** `vite-plugin-pwa` (configurado em `vite.config.ts`). O app abre na hora, mesmo sem
+  internet. **Os dados (`/api`) nunca ficam em cache:** sempre vêm do servidor.
+- **Atualizações:** quando sai uma versão nova, aparece o aviso "Versão nova disponível · Atualizar".
+- **Atalhos** (segurar o ícone no Android / clique direito no computador): Dashboard, Pipeline e Novo lead.
+- Para testar o app instalável localmente: `npm run build && npm run preview` (o `npm run dev` não ativa o service worker).
+
 ## Rodar localmente (sem Cloudflare)
 
 ```bash
@@ -113,8 +131,8 @@ db/schema.ts            schema Drizzle (fonte da verdade)
 db/seed.sql             dados de TESTE
 drizzle/                migrations SQL
 scripts/                db-local (SQLite de teste)
-src/components/         marca, layout, ui (shadcn), dashboard e pipeline
-src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, usePipeline
+src/components/         marca, layout, ui (shadcn), app (instalar/avisos), dashboard e pipeline
+src/hooks/              useDashboardKpis, useFunil, usePropostasVencendo, useTarefasHoje, useOrigemLeads, usePipeline, useInstalarApp
 src/lib/                negocio (valorNegocio), formato, tipos, api, usuario
 src/pages/              Dashboard, Pipeline (kanban), EmBreve
 ```

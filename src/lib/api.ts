@@ -9,6 +9,11 @@ export class ErroApi extends Error {
   }
 }
 
+/** Avisa a tela (aviso "Sem internet") quando a conexão com o servidor cai ou volta. */
+export const EVENTO_CONEXAO = "nuvox:conexao";
+const avisarConexao = (online: boolean) =>
+  window.dispatchEvent(new CustomEvent<boolean>(EVENTO_CONEXAO, { detail: online }));
+
 export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
   let resp: Response;
   try {
@@ -18,8 +23,10 @@ export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
       headers: { "Content-Type": "application/json", ...init?.headers },
     });
   } catch {
+    avisarConexao(false);
     throw new ErroApi("Sem conexão com o servidor.", 0);
   }
+  avisarConexao(true);
   const corpo = (await resp.json().catch(() => null)) as (T & { erro?: string }) | null;
   if (!resp.ok) throw new ErroApi(corpo?.erro ?? `Erro ${resp.status}`, resp.status);
   return corpo as T;
