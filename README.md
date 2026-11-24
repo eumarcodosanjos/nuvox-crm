@@ -51,12 +51,13 @@ No `.env`, deixe `DB_LOCAL` comentado e preencha as variáveis `CLOUDFLARE_*` (v
 npx wrangler deploy
 ```
 
-O deploy mostra a URL do Worker, algo como `https://nuvox-crm-api.SEU-SUBDOMINIO.workers.dev`.
+A API está em `https://nuvox-crm.kime-marco.workers.dev`. A Cloudflare está ligada ao GitHub
+(Workers Builds): cada push na `main` publica o Worker de novo, sozinho.
 O Worker usa *Smart Placement* para rodar perto do D1 (leste dos EUA), então várias consultas por tela continuam rápidas.
 
-**2. Site (Vercel)** — troque `SUBDOMINIO` no `vercel.json` pela URL do passo 1 e importe o
-repositório em [vercel.com/new](https://vercel.com/new). O framework (Vite) é detectado sozinho e
-**não precisa de variável de ambiente nenhuma**. Cada push na branch publicada gera deploy novo.
+**2. Site (Vercel)** — o `vercel.json` repassa `/api/*` para a URL do Worker. O projeto `nuvox-crm`
+na Vercel está ligado ao GitHub e **não precisa de variável de ambiente nenhuma**. Cada push na
+`main` publica o site de novo.
 
 ## Banco de dados
 

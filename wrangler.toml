@@ -2,7 +2,7 @@
 #   Deploy:      npx wrangler deploy
 #   Migrations:  npx wrangler d1 migrations apply nuvox-crm --remote
 # O site (React) fica na Vercel, que repassa /api/* para este Worker (vercel.json).
-name = "nuvox-crm-api"
+name = "nuvox-crm"
 main = "worker/index.ts"
 compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]

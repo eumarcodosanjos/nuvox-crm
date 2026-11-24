@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/:rota*",
-      "destination": "https://nuvox-crm-api.SUBDOMINIO.workers.dev/api/:rota*"
+      "destination": "https://nuvox-crm.kime-marco.workers.dev/api/:rota*"
     },
     {
       "source": "/((?!api).*)",
