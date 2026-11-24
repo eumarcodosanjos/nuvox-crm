@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   DndContext,
@@ -22,7 +22,7 @@ import { Erro } from "@/components/dashboard/Estados";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MetaDegraus } from "@/components/dashboard/MetaDegraus";
 import { Icone } from "@/components/marca/Icone";
-import { COLUNAS, TITULO_COLUNA, ehColuna } from "@/components/pipeline/etapas";
+import { COLUNAS, COR_COLUNA, TITULO_COLUNA, ehColuna, type EtapaColuna } from "@/components/pipeline/etapas";
 import { CardConteudo } from "@/components/pipeline/NegocioCard";
 import { PipelineColuna, ZonaPerdido } from "@/components/pipeline/PipelineColuna";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import { useProdutoSelecionado } from "@/hooks/useProdutos";
 import { useMoverNegocio, usePipeline } from "@/hooks/usePipeline";
 import { moeda, normalizar, percentual, plural } from "@/lib/formato";
 import type { Etapa, NegocioPipeline } from "@/lib/tipos";
+import { cn } from "@/lib/utils";
 
 const nomeEtapa = (id: unknown) => {
   const etapa = String(id);
@@ -98,6 +99,19 @@ export default function Pipeline() {
   const mover = useMoverNegocio();
   const [busca, setBusca] = useState("");
   const [arrastando, setArrastando] = useState<NegocioPipeline | null>(null);
+  /** Celular: uma coluna por vez, escolhida nas abas. */
+  const [aba, setAba] = useState<EtapaColuna>("novo");
+  const quadroRef = useRef<HTMLDivElement>(null);
+  function trocarAba(etapa: EtapaColuna) {
+    setAba(etapa);
+    // Se a lista já foi rolada, a nova aba começa do primeiro card (logo abaixo das abas fixas).
+    const quadro = quadroRef.current;
+    const tabs = quadro?.previousElementSibling;
+    if (!quadro || !tabs) return;
+    const fimDasAbas = tabs.getBoundingClientRect().bottom;
+    const topo = quadro.getBoundingClientRect().top;
+    if (topo < fimDasAbas) window.scrollTo({ top: window.scrollY + topo - fimDasAbas - 8 });
+  }
 
   const sensores = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -204,16 +218,55 @@ export default function Pipeline() {
           <p className="-mb-3 text-xs text-apoio" aria-live="polite">
             {busca || produto
               ? `${plural(filtrados.length, "negócio encontrado", "negócios encontrados")}`
-              : `${plural(filtrados.length, "negócio", "negócios")} no quadro · arraste os cards ou use o menu ⋯`}
+              : (
+                <>
+                  {plural(filtrados.length, "negócio", "negócios")} no quadro
+                  <span className="hidden sm:inline"> · arraste os cards ou use o menu ⋯</span>
+                  <span className="sm:hidden"> · use o menu ⋯ para mover</span>
+                </>
+              )}
           </p>
-          <div className="-mx-4 snap-x snap-mandatory scroll-px-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:snap-none sm:px-0">
-            <div className="grid min-w-[1088px] grid-cols-5 gap-3 [&>section]:snap-start">
+
+          {/* Celular: abas das etapas (fixas no topo ao rolar) */}
+          <div
+            role="tablist"
+            aria-label="Etapas do pipeline"
+            className="sticky top-[61px] z-10 -mx-4 -mb-2 flex overflow-x-auto border-b border-borda bg-podio px-1.5 sm:hidden"
+          >
+            {COLUNAS.map((etapa) => {
+              const ativa = aba === etapa;
+              return (
+                <button
+                  key={etapa}
+                  type="button"
+                  role="tab"
+                  aria-selected={ativa}
+                  aria-controls={`painel-${etapa}`}
+                  onClick={() => trocarAba(etapa)}
+                  className={cn(
+                    "relative flex min-h-12 shrink-0 items-center gap-1 px-2.5 text-[11px] font-semibold uppercase tracking-rotulo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-limao",
+                    ativa ? "text-tatame" : "text-apoio",
+                  )}
+                >
+                  {etapa === "fechado" ? "Fechado" : TITULO_COLUNA[etapa]}
+                  <span className={cn("num font-normal tracking-normal", ativa ? "text-tatame" : "text-degrau-2")}>
+                    {filtrados.filter((n) => n.etapa === etapa).length}
+                  </span>
+                  {ativa && <span aria-hidden className={cn("absolute inset-x-2.5 bottom-0 h-[3px]", COR_COLUNA[etapa].linha)} />}
+                </button>
+              );
+            })}
+          </div>
+
+          <div ref={quadroRef} className="scroll-mt-28 sm:overflow-x-auto sm:pb-2">
+            <div className="sm:grid sm:min-w-[1088px] sm:grid-cols-5 sm:gap-3">
               {COLUNAS.map((etapa) => (
                 <PipelineColuna
                   key={etapa}
                   etapa={etapa}
                   negocios={filtrados.filter((n) => n.etapa === etapa)}
                   filtrando={!!busca.trim()}
+                  ativa={aba === etapa}
                   aoMover={moverPara}
                 />
               ))}

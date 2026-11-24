@@ -8,44 +8,48 @@ import { cn } from "@/lib/utils";
 import { COR_COLUNA, ehColuna } from "./etapas";
 import { MoverParaMenu } from "./MoverParaMenu";
 
-/** Conteúdo visual do card (usado no quadro e na "sombra" que acompanha o arraste). */
+/**
+ * Conteúdo visual do card (usado no quadro e na "sombra" que acompanha o arraste).
+ * Compacto: produto, nome, organização numa linha, valor só quando existe e
+ * a próxima tarefa numa linha só — a última linha tem 44px para o link "Reuniões".
+ */
 export const CardConteudo = forwardRef<
   HTMLDivElement,
   { negocio: NegocioPipeline; flutuando?: boolean } & HTMLAttributes<HTMLDivElement>
 >(({ negocio, flutuando, className, ...props }, ref) => {
   const cor = ehColuna(negocio.etapa) ? COR_COLUNA[negocio.etapa] : COR_COLUNA.novo;
   const tarefa = negocio.proximaTarefa;
-  const atrasada = tarefa ? quando(tarefa.dataHora).startsWith("Atrasada") : false;
+  const prazo = tarefa ? quando(tarefa.dataHora) : null;
+  const atrasada = prazo?.startsWith("Atrasada") ?? false;
 
   return (
     <div
       ref={ref}
       className={cn(
-        "relative border border-borda bg-superficie py-3.5 pl-5 pr-12 text-left",
+        "relative border border-borda bg-superficie pl-4 pr-3 pt-3 text-left",
         flutuando && "cursor-grabbing border-tatame",
         className,
       )}
       {...props}
     >
       {/* Faixa com a cor do produto */}
-      <span aria-hidden className="absolute -left-px -top-px bottom-[-1px] w-1.5" style={{ background: negocio.produtoCor }} />
-      <p className="rotulo mb-1.5 !text-[10px]">{negocio.produto}</p>
-      <p className="text-[15px] font-semibold leading-snug text-tatame">{negocio.leadNome}</p>
-      <p className="mt-1 text-sm text-apoio">
-        {negocio.organizacao ? `${negocio.organizacao} · ` : ""}
-        <span className="num whitespace-nowrap text-tatame">{moeda(negocio.valor)}</span>
-      </p>
-      <p className={cn("mt-2.5 flex items-start gap-2 text-sm", tarefa ? "text-tatame" : "text-apoio")}>
-        <Icone icone={CalendarDays} className={cn("mt-0.5 size-4 shrink-0", atrasada ? "text-alerta" : cor.icone)} />
+      <span aria-hidden className="absolute -left-px -top-px bottom-[-1px] w-1" style={{ background: negocio.produtoCor }} />
+      <p className="rotulo truncate pr-9 !text-[10px]">{negocio.produto}</p>
+      <p className="mt-1 line-clamp-2 pr-8 text-[15px] font-semibold leading-snug text-tatame">{negocio.leadNome}</p>
+      {negocio.organizacao && (
+        <p className="mt-0.5 truncate text-[13px] text-apoio" title={negocio.organizacao}>
+          {negocio.organizacao}
+        </p>
+      )}
+      {negocio.valor > 0 && <p className="num mt-1 text-sm font-semibold text-tatame">{moeda(negocio.valor)}</p>}
+      <p className={cn("flex min-h-11 items-center gap-1.5 pr-20 text-xs", tarefa ? "text-tatame" : "text-apoio")}>
+        <Icone icone={CalendarDays} className={cn("size-3.5 shrink-0", atrasada ? "text-alerta" : cor.icone)} />
         {tarefa ? (
-          <span>
-            {tarefa.titulo}
-            <span className={cn("num block text-xs", atrasada ? "text-alerta" : "text-apoio")}>
-              {quando(tarefa.dataHora)}
-            </span>
+          <span className="truncate">
+            {tarefa.titulo} <span className={cn("num", atrasada ? "text-alerta" : "text-apoio")}>· {prazo}</span>
           </span>
         ) : (
-          <span>Sem próxima tarefa</span>
+          <span className="truncate">Sem tarefa</span>
         )}
       </p>
     </div>
@@ -82,11 +86,12 @@ export function NegocioCard({
       />
       <a
         href={`https://kime-prototipo-navegacao.eumarcoodosanjos.chatgpt.site/api/nuvox-crm/negocios/${negocio.id}/abrir`}
-        className="mt-1 inline-flex min-h-11 items-center px-4 text-xs font-semibold text-apoio hover:text-tatame"
+        aria-label={`Reuniões de ${negocio.leadNome}`}
+        className="absolute bottom-px right-px inline-flex min-h-11 items-center px-3 text-[11px] font-semibold uppercase tracking-rotulo text-apoio hover:text-tatame focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-limao"
       >
         Reuniões
       </a>
-      <div className="absolute right-0.5 top-0.5">
+      <div className="absolute right-0 top-0">
         <MoverParaMenu etapaAtual={negocio.etapa} nome={negocio.leadNome} aoMover={aoMover} />
       </div>
     </li>
