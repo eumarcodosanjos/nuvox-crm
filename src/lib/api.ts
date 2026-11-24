@@ -4,6 +4,8 @@ export class ErroApi extends Error {
   constructor(
     message: string,
     public status: number,
+    /** Erros por campo (validação do servidor, status 422). */
+    public campos: Record<string, string> = {},
   ) {
     super(message);
   }
@@ -27,7 +29,7 @@ export async function api<T>(caminho: string, init?: RequestInit): Promise<T> {
     throw new ErroApi("Sem conexão com o servidor.", 0);
   }
   avisarConexao(true);
-  const corpo = (await resp.json().catch(() => null)) as (T & { erro?: string }) | null;
-  if (!resp.ok) throw new ErroApi(corpo?.erro ?? `Erro ${resp.status}`, resp.status);
+  const corpo = (await resp.json().catch(() => null)) as (T & { erro?: string; campos?: Record<string, string> }) | null;
+  if (!resp.ok) throw new ErroApi(corpo?.erro ?? `Erro ${resp.status}`, resp.status, corpo?.campos);
   return corpo as T;
 }

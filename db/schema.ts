@@ -17,8 +17,18 @@ const agora = sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`;
 const id = () => integer("id").primaryKey({ autoIncrement: true });
 const lista = (valores: readonly string[]) => sql.raw(valores.map((v) => `'${v}'`).join(", "));
 
-export const PRODUTOS = ["Nuvox Federações", "Nuvox Combat", "Nuvox Academia"] as const;
-export const TIPOS_LEAD = ["federacao", "academia", "organizador_evento", "prefeitura", "outro"] as const;
+export const TIPOS_LEAD = [
+  "federacao",
+  "academia",
+  "organizador_evento",
+  "prefeitura",
+  "secretaria_educacao",
+  "escola",
+  "outro",
+] as const;
+/** Campos do GovEscolar */
+export const CARGOS = ["secretario_educacao", "diretor", "coordenador", "gestor_ti", "outro"] as const;
+export const REDES_ENSINO = ["municipal", "estadual", "particular"] as const;
 export const ORIGENS = ["whatsapp", "instagram", "indicacao", "site", "outro"] as const;
 export const ETAPAS = ["novo", "contato", "proposta", "negociacao", "fechado", "perdido"] as const;
 export const STATUS_PROPOSTA = ["aberta", "aceita", "recusada", "vencida"] as const;
@@ -33,16 +43,23 @@ export const usuarios = sqliteTable("usuarios", {
   created_at: text("created_at").notNull().default(agora),
 });
 
+/** Produtos da Nuvox. Novos produtos entram como dados (nome + cor), sem mudar o schema. */
 export const produtos = sqliteTable(
   "produtos",
   {
     id: id(),
-    nome: text("nome", { enum: PRODUTOS }).notNull().unique(),
+    nome: text("nome").notNull().unique(),
     modelo_cobranca: text("modelo_cobranca").notNull(),
     /** Cor de identidade do produto no CRM (hex). Não usar limão, roxo nem alerta: já têm significado. */
     cor: text("cor").notNull().default("#B5B5B0"),
   },
-  (t) => [check("produtos_nome_check", sql`${t.nome} IN (${lista(PRODUTOS)})`)],
+  // Hex "#RRGGBB". (Padrões GLOB longos estouram o limite do D1, por isso a checagem em partes.)
+  (t) => [
+    check(
+      "produtos_cor_check",
+      sql`length(${t.cor}) = 7 AND substr(${t.cor}, 1, 1) = '#' AND lower(substr(${t.cor}, 2)) NOT GLOB '*[^0-9a-f]*'`,
+    ),
+  ],
 );
 
 export const leads = sqliteTable(
@@ -55,11 +72,27 @@ export const leads = sqliteTable(
     origem: text("origem", { enum: ORIGENS }).notNull().default("outro"),
     telefone: text("telefone"),
     email: text("email"),
+    observacoes: text("observacoes"),
+    // ── Campos do GovEscolar (opcionais nos outros produtos) ──
+    municipio: text("municipio"),
+    /** Sigla do estado, ex.: SC */
+    uf: text("uf"),
+    cargo_contato: text("cargo_contato", { enum: CARGOS }),
+    rede_ensino: text("rede_ensino", { enum: REDES_ENSINO }),
+    qtd_escolas: integer("qtd_escolas"),
+    qtd_alunos: integer("qtd_alunos"),
     created_at: text("created_at").notNull().default(agora),
   },
   (t) => [
     check("leads_tipo_check", sql`${t.tipo} IN (${lista(TIPOS_LEAD)})`),
     check("leads_origem_check", sql`${t.origem} IN (${lista(ORIGENS)})`),
+    check("leads_uf_check", sql`${t.uf} IS NULL OR (length(${t.uf}) = 2 AND ${t.uf} = upper(${t.uf}))`),
+    check("leads_cargo_check", sql`${t.cargo_contato} IS NULL OR ${t.cargo_contato} IN (${lista(CARGOS)})`),
+    check("leads_rede_check", sql`${t.rede_ensino} IS NULL OR ${t.rede_ensino} IN (${lista(REDES_ENSINO)})`),
+    check(
+      "leads_qtd_check",
+      sql`(${t.qtd_escolas} IS NULL OR ${t.qtd_escolas} >= 0) AND (${t.qtd_alunos} IS NULL OR ${t.qtd_alunos} >= 0)`,
+    ),
     index("leads_created_at_idx").on(t.created_at),
   ],
 );

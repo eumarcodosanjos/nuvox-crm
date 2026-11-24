@@ -11,6 +11,8 @@
  *   GET    /api/dashboard/propostas-vencendo
  *   GET    /api/dashboard/tarefas-hoje
  *   GET    /api/dashboard/origem-leads?periodo=mes
+ *   GET    /api/leads                  leads com o negócio mais recente
+ *   POST   /api/leads                  cria lead + negócio (422 com { campos } se inválido)
  *   GET    /api/pipeline               negócios abertos + fechados no mês
  *   PATCH  /api/negocios/:id           { etapa }
  *   PATCH  /api/tarefas/:id            { concluida: boolean }
@@ -18,6 +20,7 @@
 import { ErroBanco } from "./db.js";
 import * as dash from "./dashboard.js";
 import { periodoValido } from "./periodo.js";
+import * as leads from "./leads.js";
 import * as pipeline from "./pipeline.js";
 
 const json = (dados: unknown, status = 200) =>
@@ -63,6 +66,14 @@ export async function tratar(req: Request): Promise<Response> {
       }
     }
 
+    if (rota === "leads") {
+      if (req.method === "GET") return json(await leads.listarLeads());
+      if (req.method === "POST") {
+        const corpo = await req.json().catch(() => null);
+        return json(await leads.criarLead(corpo), 201);
+      }
+    }
+
     if (req.method === "GET" && rota === "pipeline") {
       return json(await pipeline.listarPipeline());
     }
@@ -85,6 +96,7 @@ export async function tratar(req: Request): Promise<Response> {
 
     return erro("Rota não encontrada.", 404);
   } catch (e) {
+    if (e instanceof leads.ErroValidacao) return json({ erro: e.message, campos: e.campos }, 422);
     console.error(`[api] ${req.method} /${rota}`, e);
     const msg = e instanceof ErroBanco ? e.message : "Erro interno. Tente de novo em instantes.";
     return erro(msg, 500);

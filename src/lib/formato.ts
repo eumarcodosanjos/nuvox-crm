@@ -79,3 +79,11 @@ export const PERIODOS: { valor: Periodo; rotulo: string; titulo: string }[] = [
 ];
 
 export const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+
+/** "1.234,56" / "1234,5" / "R$ 80" → centavos. Vazio → 0. Inválido → NaN. */
+export function lerMoeda(texto: string): number {
+  const limpo = texto.replace(/[R$\s.]/g, "").replace(",", ".");
+  if (!limpo) return 0;
+  const n = Number(limpo);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) : NaN;
+}
