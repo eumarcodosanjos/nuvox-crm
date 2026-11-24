@@ -19,24 +19,32 @@ export function FunilBarra({ etapa, maximo }: { etapa: FunilEtapa; maximo: numbe
   const descricao = `${nome}: ${plural(etapa.quantidade, "negócio", "negócios")}, ${moeda(etapa.valor)}`;
 
   return (
-    <li className="grid grid-cols-[84px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 sm:grid-cols-[96px_minmax(0,1fr)_128px]">
-      <span className="text-sm font-medium text-tatame">{nome}</span>
-      <div className="h-9 bg-borda" title={descricao} aria-label={descricao} role="img">
+    <li className="grid grid-cols-[84px_minmax(0,1fr)_40px] items-center gap-x-3 sm:grid-cols-[96px_minmax(0,1fr)_128px]">
+      <span className="text-[13px] text-tatame sm:text-sm sm:font-medium">{nome}</span>
+      <div className="h-3.5 bg-borda sm:h-9" title={descricao} aria-label={descricao} role="img">
         {etapa.quantidade > 0 && (
           <div
-            className={cn("flex h-full min-w-11 items-center px-3 transition-[width] duration-500", cor.barra)}
+            className={cn("flex h-full min-w-1 items-center transition-[width] duration-500 sm:min-w-11 sm:px-3", cor.barra, etapa.etapa === "novo" && "max-sm:bg-degrau-2")}
             style={{ width: `${largura}%` }}
           >
-            <span className={cn("num font-titulo text-sm", cor.texto)}>{etapa.quantidade}</span>
+            <span className={cn("num hidden font-titulo text-sm sm:inline", cor.texto)}>{etapa.quantidade}</span>
           </div>
         )}
         {etapa.quantidade === 0 && (
-          <span className="num flex h-full items-center px-3 font-titulo text-sm text-apoio">0</span>
+          <span className="num hidden h-full items-center px-3 font-titulo text-sm text-apoio sm:flex">0</span>
         )}
       </div>
-      <span className="num col-start-2 text-right text-sm font-semibold text-tatame sm:col-start-auto">
-        {moeda(etapa.valor)}
+      {/* Celular: a quantidade fica à direita da barra fina; do tablet para cima, o valor */}
+      <span
+        aria-hidden
+        className={cn(
+          "num text-right text-[13px] font-semibold sm:hidden",
+          etapa.etapa === "fechado" && etapa.quantidade > 0 ? "text-limao" : "text-tatame",
+        )}
+      >
+        {etapa.quantidade}
       </span>
+      <span className="num hidden text-right text-sm font-semibold text-tatame sm:block">{moeda(etapa.valor)}</span>
     </li>
   );
 }

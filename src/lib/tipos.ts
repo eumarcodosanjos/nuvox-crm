@@ -146,6 +146,9 @@ export interface TarefaHoje {
   concluida: boolean;
   /** Cor do produto do negócio ligado à tarefa (null se a tarefa não tem negócio). */
   produtoCor: string | null;
+  /** Lead e organização do negócio ligado (null se a tarefa não tem negócio). */
+  leadNome: string | null;
+  organizacao: string | null;
 }
 
 export interface OrigemLeads {

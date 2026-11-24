@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Estado vazio: texto curto e direto. */
 export function Vazio({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex min-h-24 items-center border border-dashed border-borda px-4 py-6 text-sm text-apoio">
+    <p className="flex items-center border border-dashed border-borda px-3.5 py-3 text-[13px] text-apoio sm:min-h-24 sm:px-4 sm:py-6 sm:text-sm">
       {children}
     </p>
   );

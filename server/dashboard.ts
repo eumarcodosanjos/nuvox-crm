@@ -186,11 +186,15 @@ export async function tarefasHoje(produto: FiltroProduto = null): Promise<Tarefa
     data_hora: string;
     concluida: number;
     produto_cor: string | null;
+    lead_nome: string | null;
+    organizacao: string | null;
   }>(
-    `SELECT t.id, t.titulo, t.canal, t.data_hora, t.concluida, pr.cor AS produto_cor
+    `SELECT t.id, t.titulo, t.canal, t.data_hora, t.concluida, pr.cor AS produto_cor,
+            l.nome AS lead_nome, l.organizacao
        FROM tarefas t
        LEFT JOIN negocios n  ON n.id = t.negocio_id
        LEFT JOIN produtos pr ON pr.id = n.produto_id
+       LEFT JOIN leads l     ON l.id = n.lead_id
       WHERE t.data_hora >= ? AND t.data_hora < ?
         AND (? IS NULL OR n.produto_id = ?)
       ORDER BY t.data_hora ASC, t.id ASC`,
@@ -203,6 +207,8 @@ export async function tarefasHoje(produto: FiltroProduto = null): Promise<Tarefa
     dataHora: t.data_hora,
     concluida: !!t.concluida,
     produtoCor: t.produto_cor,
+    leadNome: t.lead_nome,
+    organizacao: t.organizacao,
   }));
 }
 
