@@ -30,8 +30,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardKpis } from "@/hooks/useDashboardKpis";
 import { useProdutoSelecionado } from "@/hooks/useProdutos";
 import { useMoverNegocio, usePipeline } from "@/hooks/usePipeline";
-import { moeda, normalizar, percentual, plural } from "@/lib/formato";
-import type { Etapa, NegocioPipeline } from "@/lib/tipos";
+import { moeda, moedaCurta, normalizar, percentual, plural } from "@/lib/formato";
+import type { DashboardKpis, Etapa, NegocioPipeline } from "@/lib/tipos";
 import { cn } from "@/lib/utils";
 
 const nomeEtapa = (id: unknown) => {
@@ -286,7 +286,9 @@ function Indicadores({ produto }: { produto: number | null }) {
   const { data, isPending, isError } = useDashboardKpis("mes", produto);
   if (isError) return null;
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
+    <>
+      <FaixaIndicadores dados={data} carregando={isPending} produto={produto} />
+      <div className="hidden gap-4 sm:grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))" }}>
       <KpiCard
         carregando={isPending}
         rotulo="Em negociação"
@@ -308,7 +310,82 @@ function Indicadores({ produto }: { produto: number | null }) {
       >
         {data && <MetaDegraus percentual={data.meta.percentual} meta={data.meta.valor} semCabecalho />}
       </KpiCard>
-    </div>
+      </div>
+    </>
+  );
+}
+
+/** Celular: os três indicadores em linhas curtas, para o quadro aparecer logo. */
+function FaixaIndicadores({
+  dados,
+  carregando,
+  produto,
+}: {
+  dados: DashboardKpis | undefined;
+  carregando: boolean;
+  produto: number | null;
+}) {
+  const meta = dados?.meta;
+  const preenchidos = meta?.percentual != null ? Math.min(5, Math.floor(meta.percentual * 5)) : 0;
+  const linhas = dados
+    ? [
+        {
+          rotulo: "Em negociação",
+          valor: moeda(dados.pipelineAberto.valor),
+          detalhe: plural(dados.pipelineAberto.negocios, "aberto", "abertos"),
+        },
+        {
+          rotulo: "Fechado no mês",
+          valor: moeda(dados.fechadoPeriodo.valor),
+          detalhe: plural(dados.fechadoPeriodo.negocios, "negócio", "negócios"),
+          destaque: true,
+        },
+      ]
+    : [];
+  return (
+    <dl
+      className="divide-y divide-borda border border-borda bg-superficie text-sm sm:hidden"
+      aria-busy={carregando || undefined}
+    >
+      {carregando || !dados || !meta ? (
+        Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="flex items-center justify-between gap-3 px-4 py-3">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+        ))
+      ) : (
+        <>
+          {linhas.map((l) => (
+            <div key={l.rotulo} className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+              <dt className="rotulo shrink-0 !text-[10px]">{l.rotulo}</dt>
+              <dd className="min-w-0 truncate text-right">
+                <span className={cn("num font-semibold", l.destaque ? "text-limao" : "text-tatame")}>{l.valor}</span>
+                <span className="num text-xs text-apoio max-[359px]:hidden"> · {l.detalhe}</span>
+              </dd>
+            </div>
+          ))}
+          <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+            <dt className="rotulo shrink-0 !text-[10px]">{produto ? "Meta · geral" : "Meta do mês"}</dt>
+            {meta.valor && meta.percentual != null ? (
+              <dd className="flex min-w-0 items-center gap-2.5">
+                <span aria-hidden className="grid w-16 shrink-0 grid-cols-5 gap-0.5">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <span key={i} className={cn("h-1.5", i < preenchidos ? "bg-limao" : "bg-borda")} />
+                  ))}
+                </span>
+                <span className="num truncate">
+                  <span className="font-semibold text-tatame">{percentual(meta.percentual)}</span>
+                  <span className="text-xs text-apoio max-[359px]:hidden"> de {moedaCurta(meta.valor)}</span>
+                </span>
+              </dd>
+            ) : (
+              <dd className="text-xs text-apoio">Sem meta</dd>
+            )}
+          </div>
+        </>
+      )}
+    </dl>
   );
 }
 

@@ -13,6 +13,15 @@ export const moeda = (centavos: number) => brl.format(centavos / 100);
 
 export const percentual = (fracao: number) => pct.format(fracao);
 
+const brlCurto = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+/** Centavos → "R$ 115,6 mil" (para espaços apertados, como a faixa de indicadores no celular). */
+export const moedaCurta = (centavos: number) => brlCurto.format(centavos / 100);
+
 export const horario = (iso: string) => hora.format(new Date(iso));
 
 const diaMes = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
